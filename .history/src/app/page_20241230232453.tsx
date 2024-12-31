@@ -148,11 +148,9 @@ export default function Home() {
                 : "rgba(75, 192, 192, 0.6)"  // Default color for other points
             ),            
             pointRadius: dates.map((_: any, i: any) =>
-              changes.find((point) => point.index === i)
+              uniqueSecondPartDates.has(dates[i]) || changes.find((point) => point.index === i)
                 ? 5  // Show the point if it's significant or if the date contains "2025"
-                : uniqueSecondPartDates.has(dates[i])
-                  ? 2
-                  : 0  // Hide the point if it's neither significant nor containing "2025"
+                : 0  // Hide the point if it's neither significant nor containing "2025"
             ),            
             pointHoverRadius: 10, // Increase hover size for better visibility
           },

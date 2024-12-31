@@ -112,52 +112,58 @@ export default function Home() {
       const firstPartPrices = prices.slice(0, separateDateIndex);
   
       const secondPartDates = dates.slice(separateDateIndex + 1);
-      const uniqueSecondPartDates = new Set(secondPartDates);
       const secondPartPrices = prices.slice(separateDateIndex + 1);
   
       // Combine both datasets for use in the chart
       const combinedDates = [...firstPartDates, ...secondPartDates];
       const combinedPrices = [...firstPartPrices, ...secondPartPrices];
   
+      // Set the backgroundColor and borderColor for the two parts
+      const backgroundColor = [
+        ...new Array(firstPartDates.length).fill('rgba(59, 130, 246, 0.5)'),  // Blue for the first part
+        ...new Array(secondPartDates.length).fill('rgba(255, 165, 0, 0.5)'),  // Orange for the second part
+      ];
+  
+      const borderColor = [
+        ...new Array(firstPartDates.length).fill('rgba(59, 130, 246, 0.9)'),  // Blue for the first part
+        ...new Array(secondPartDates.length).fill('rgba(255, 165, 0, 0.9)'),  // Orange for the second part
+      ];
+  
       setChartDisplayData({
         labels: combinedDates,
         datasets: [
           {
             label: `${stockSymbol} Stock Price`,
-            backgroundColor: dates.map((_: any, i: any) =>
-              // Check if the date contains "2025" (case sensitive)
-              uniqueSecondPartDates.has(dates[i])
-                ? "rgba(255, 165, 0, 0.5)"  // Orange for dates containing "2025"
-                : "rgba(59, 130, 246, 0.5)"
-            ),
-            borderColor: dates.map((_: any, i: any) =>
-              // Check if the date contains "2025" (case sensitive)
-              uniqueSecondPartDates.has(dates[i])
-                ? "rgba(255, 165, 0, 0.9)"  // Orange for dates containing "2025"
-                : "rgba(59, 130, 246, 0.9)"
-            ),
+            backgroundColor: backgroundColor,
+            borderColor: combinedDates.map((date, i) => {
+              // Find significant points
+              const point = changes.find((point) => point.index === i);
+      
+              // If it's a significant point, use green or red
+              if (point) {
+                return point.delta > 0 ? "rgb(68, 246, 59)" : "red"; // Green for positive, red for negative
+              }
+      
+              // If not a significant point, use default line color
+              return "rgba(59, 130, 246, 0.9)"; // Blue for non-significant points
+            }),
             data: combinedPrices,
             pointBackgroundColor: dates.map((_: any, i: any) =>
-              // Check if the date contains "2025" (case sensitive)
-              uniqueSecondPartDates.has(dates[i])
-                ? "rgba(255, 165, 0, 1)"  // Orange for dates containing "2025"
-                : changes.find((point) => point.index === i)
+              changes.find((point) => point.index === i)
                 ? changes.find((point) => point.index === i)!.delta > 0
                   ? "rgb(68, 246, 59)"  // Green for positive significant change
                   : "red"  // Red for negative significant change
                 : "rgba(75, 192, 192, 0.6)"  // Default color for other points
-            ),            
-            pointRadius: dates.map((_: any, i: any) =>
-              changes.find((point) => point.index === i)
-                ? 5  // Show the point if it's significant or if the date contains "2025"
-                : uniqueSecondPartDates.has(dates[i])
-                  ? 2
-                  : 0  // Hide the point if it's neither significant nor containing "2025"
-            ),            
+            ),
+            pointRadius: dates.map(
+              (_: any, i: any) =>
+                changes.find((point) => point.index === i) ? 5 : 0 // Show only significant points
+            ),
             pointHoverRadius: 10, // Increase hover size for better visibility
           },
         ],
       });
+      
   
       const chartOptions = {
         plugins: {
