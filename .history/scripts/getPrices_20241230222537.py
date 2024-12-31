@@ -248,7 +248,7 @@ def historical_prices():
     prices = [item['close'] for item in data]
 
     # Add seperator/dummy values to distinguish between real and predicted values
-    dates.append("Seperate-Dates")
+    dates.append("20")
     prices.append("Seperate-Prices")
 
     print("\n\n\n\n\nML STARTING")

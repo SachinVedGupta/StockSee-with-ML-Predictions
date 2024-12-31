@@ -30,6 +30,8 @@ if __name__ == "__main__":
     stock_data = fetch_stock_data(ticker_symbol)
 
 
+    stock_data[0].append("1000-01-01")
+    stock_data[1].append("9999")
 
     # Print the raw list
     if stock_data:

@@ -148,7 +148,7 @@ export default function Home() {
       // .slice(0, 4); // Limit to 3-4 significant points
 
       setChartDisplayData({
-        labels: dates,
+        labels: combinedDates,
         datasets: [
           {
             label: `${stockSymbol} Stock Price`,

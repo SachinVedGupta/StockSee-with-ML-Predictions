@@ -29,7 +29,9 @@ if __name__ == "__main__":
     # Fetch the stock data
     stock_data = fetch_stock_data(ticker_symbol)
 
-
+    # Add seperator/dummy values to distinguish between real and predicted values
+    stock_data[0].append("1000-01-01")
+    stock_data[1].append("9999")
 
     # Print the raw list
     if stock_data:

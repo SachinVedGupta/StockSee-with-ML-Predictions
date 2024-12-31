@@ -252,19 +252,13 @@ def historical_prices():
     prices.append("Seperate-Prices")
 
     print("\n\n\n\n\nML STARTING")
-    the_ml_predictions = ml_to_predict(ticker)
+    the_mlml_to_predict(ticker_symbol)
+
+
     print("\n\n\n\n\nML DONE")
-    the_ml_predictions[0] = the_ml_predictions[0].tolist()
-    print(the_ml_predictions)
-    print("\n\n\nTHE ML PREDICTIONS ARE ABOVE\n\n\n")
-    final_graph_values = []
-    final_graph_values.append(dates + the_ml_predictions[1])
-    final_graph_values.append(prices + the_ml_predictions[0])
-    print(final_graph_values)
-    print("\n\nDONE\n\n")
 
 
-    return jsonify(final_graph_values) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
+    return jsonify([dates, prices]) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
 
 
 if __name__ == '__main__':

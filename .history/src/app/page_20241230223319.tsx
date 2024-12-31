@@ -109,27 +109,7 @@ export default function Home() {
 
 
 
-      const separateDateIndex = dates.indexOf('Seperate-Dates');
-      const firstPartDates = dates.slice(0, separateDateIndex);
-      const firstPartPrices = prices.slice(0, separateDateIndex);
-  
-      const secondPartDates = dates.slice(separateDateIndex + 1);
-      const secondPartPrices = prices.slice(separateDateIndex + 1);
-  
-      // Combine both datasets for use in the chart
-      const combinedDates = [...firstPartDates, ...secondPartDates];
-      const combinedPrices = [...firstPartPrices, ...secondPartPrices];
-  
-      // Set the backgroundColor and borderColor for the two parts
-      const backgroundColor = [
-        ...new Array(firstPartDates.length).fill('rgba(59, 130, 246, 0.5)'),  // Blue for the first part
-        ...new Array(secondPartDates.length).fill('rgba(255, 165, 0, 0.5)'),  // Orange for the second part
-      ];
-      
-      const borderColor = [
-        ...new Array(firstPartDates.length).fill('rgba(59, 130, 246, 0.9)'),  // Blue for the first part
-        ...new Array(secondPartDates.length).fill('rgba(255, 165, 0, 0.9)'),  // Orange for the second part
-      ];
+
 
 
 
@@ -150,9 +130,9 @@ export default function Home() {
       setChartDisplayData({
         labels: dates,
         datasets: [
-          {
-            label: `${stockSymbol} Stock Price`,
-            backgroundColor: "rgba(59, 130, 246, 0.5)",
+          {stockSymbol} Stock Price`,
+            backgroundCo
+            label: `${lor: "rgba(59, 130, 246, 0.5)",
             borderColor: "rgba(59, 130, 246, 0.9)",
             data: prices,
             pointBackgroundColor: dates.map((_: any, i: any) =>

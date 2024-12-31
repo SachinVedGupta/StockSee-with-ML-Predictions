@@ -29,7 +29,8 @@ if __name__ == "__main__":
     # Fetch the stock data
     stock_data = fetch_stock_data(ticker_symbol)
 
-
+    dates.append("1000-01-01")
+    prices.append("9999")
 
     # Print the raw list
     if stock_data:

@@ -182,7 +182,7 @@ def ml_to_predict(ticker_symbol):
     plt.ylabel('Price')
     plt.show()
 
-    # predictions[0] # represents most current prediction (N values that go into future dates)
+    # predictions[0] # represents most current prediction (N values that go into future datesof the future)
     
     # Print the results
     today = datetime.today().date()
@@ -191,8 +191,6 @@ def ml_to_predict(ticker_symbol):
     action_dates = []
     for i in range(len(predictions[0])):  # Loop based on the length of predictions[0]
         action_dates.append(str(today + timedelta(days=i)))
-
-    return [predictions[0], action_dates]
 
 
 
@@ -251,20 +249,8 @@ def historical_prices():
     dates.append("Seperate-Dates")
     prices.append("Seperate-Prices")
 
-    print("\n\n\n\n\nML STARTING")
-    the_ml_predictions = ml_to_predict(ticker)
-    print("\n\n\n\n\nML DONE")
-    the_ml_predictions[0] = the_ml_predictions[0].tolist()
-    print(the_ml_predictions)
-    print("\n\n\nTHE ML PREDICTIONS ARE ABOVE\n\n\n")
-    final_graph_values = []
-    final_graph_values.append(dates + the_ml_predictions[1])
-    final_graph_values.append(prices + the_ml_predictions[0])
-    print(final_graph_values)
-    print("\n\nDONE\n\n")
 
-
-    return jsonify(final_graph_values) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
+    return jsonify([dates, prices]) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
 
 
 if __name__ == '__main__':

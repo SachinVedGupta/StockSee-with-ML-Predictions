@@ -258,8 +258,7 @@ def historical_prices():
     print(the_ml_predictions)
     print("\n\n\nTHE ML PREDICTIONS ARE ABOVE\n\n\n")
     final_graph_values = []
-    final_graph_values.append(dates + the_ml_predictions[1])
-    final_graph_values.append(prices + the_ml_predictions[0])
+    final_graph_values.append[[dates + the_ml_predictions[1]], [prices + the_ml_predictions[0]]]
     print(final_graph_values)
     print("\n\nDONE\n\n")
 
