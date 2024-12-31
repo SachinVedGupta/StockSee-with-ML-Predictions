@@ -57,6 +57,8 @@ def ml_get_historical(ticker):
 
 def ml_to_predict(ticker_symbol):
     test = False
+
+
     stock_data = ml_get_historical(ticker_symbol)
 
 

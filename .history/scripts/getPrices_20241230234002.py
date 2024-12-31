@@ -56,7 +56,7 @@ def ml_get_historical(ticker):
         return None
 
 def ml_to_predict(ticker_symbol):
-    test = False
+
     stock_data = ml_get_historical(ticker_symbol)
 
 
@@ -124,8 +124,11 @@ def ml_to_predict(ticker_symbol):
         validation_data=(X_val, Y_val)  # Use validation data
     )
 
+    test = False
+
     if test:
-        # Plot loss per iteration
+
+         # Plot loss per iteration
         plt.plot(r.history['loss'], label='loss')
         plt.plot(r.history['val_loss'], label='val_loss')
         plt.legend()
@@ -165,24 +168,23 @@ def ml_to_predict(ticker_symbol):
     predictions = scaler.inverse_transform(predictions)
     Y_val = scaler.inverse_transform(Y_val)
 
-    if test:
-        # Plot the predictions alongside actual values
-        plt.figure(figsize=(10, 6))
+    # Plot the predictions alongside actual values
+    plt.figure(figsize=(10, 6))
 
-        # Plot actual stock prices
-        plt.plot(np.arange(len(series)), scaler.inverse_transform(series.reshape(-1, 1)), label='Actual Prices', color='blue')
+    # Plot actual stock prices
+    plt.plot(np.arange(len(series)), scaler.inverse_transform(series.reshape(-1, 1)), label='Actual Prices', color='blue')
 
-        # Plot non-overlapping predictions
-        for i, pred in enumerate(predictions):
-            time_index_start = time_indices[i]
-            time_index_end = time_index_start + N
-            plt.plot(np.arange(time_index_start, time_index_end), pred, color='red', linewidth=2, label='Prediction' if i == 0 else "")
+    # Plot non-overlapping predictions
+    for i, pred in enumerate(predictions):
+        time_index_start = time_indices[i]
+        time_index_end = time_index_start + N
+        plt.plot(np.arange(time_index_start, time_index_end), pred, color='red', linewidth=2, label='Prediction' if i == 0 else "")
 
-        plt.legend()
-        plt.title('Stock Price Prediction (Non-Overlapping)')
-        plt.xlabel('Time')
-        plt.ylabel('Price')
-        plt.show()
+    plt.legend()
+    plt.title('Stock Price Prediction (Non-Overlapping)')
+    plt.xlabel('Time')
+    plt.ylabel('Price')
+    plt.show()
 
     # predictions[0] # represents most current prediction (N values that go into future dates)
     

@@ -56,7 +56,7 @@ def ml_get_historical(ticker):
         return None
 
 def ml_to_predict(ticker_symbol):
-    test = False
+
     stock_data = ml_get_historical(ticker_symbol)
 
 
@@ -166,6 +166,7 @@ def ml_to_predict(ticker_symbol):
     Y_val = scaler.inverse_transform(Y_val)
 
     if test:
+
         # Plot the predictions alongside actual values
         plt.figure(figsize=(10, 6))
 
