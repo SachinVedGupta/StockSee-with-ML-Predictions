@@ -1,4 +1,7 @@
 import requests
+import tensorflow as tf
+from tensorflow import keras
+
 
 def getArticle(ticker, date):
   # 2024-12-30 is format of date
@@ -14,3 +17,6 @@ def getArticle(ticker, date):
     article = first_item.get('title', '') + first_item.get('description', '') + first_item.get('snippet', '')
 
   return article
+
+
+# getArticle("AMD", "2024-12-24")

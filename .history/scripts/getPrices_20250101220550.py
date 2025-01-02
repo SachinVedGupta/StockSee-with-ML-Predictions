@@ -261,6 +261,21 @@ def with_sentiment_ml_to_predict(ticker_symbol):
 
     stock_data = df_with_sentiment(ticker_symbol)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     # series represents all the stock prices (each value is the price for that day)
     # plt.plot(stock_data.index, stock_data['Close'])
     series = stock_data['Close'].values.reshape(-1, 1) # percent change or close or sentiment
@@ -298,6 +313,24 @@ def with_sentiment_ml_to_predict(ticker_symbol):
     x = Dense(N)(x)  # Predict N values (future prices)
     model = Model(i, x)
     model.compile(loss='mse', optimizer=Adam(learning_rate=0.001))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     # Split data into training and validation

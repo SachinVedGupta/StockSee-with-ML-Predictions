@@ -14,3 +14,6 @@ def getArticle(ticker, date):
     article = first_item.get('title', '') + first_item.get('description', '') + first_item.get('snippet', '')
 
   return article
+
+
+# getArticle("AMD", "2024-12-24")

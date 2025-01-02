@@ -18,7 +18,7 @@ def plot_graphs(history, string):
   plt.show()
 
 
-def create_save_sentiment_model():
+def create_save_sentiment_model(): # tra
   vocab_size = 3500 # from 10000
   embedding_dim = 16
   max_length = 100
@@ -29,7 +29,7 @@ def create_save_sentiment_model():
   sentences = []
   labels = []
 
-  with open('sentimentData.csv', mode='r', encoding='utf-8', errors="ignore") as file:
+  with open('./sentiment_storage/sentimentData.csv', mode='r', encoding='utf-8', errors="ignore") as file:
       reader = csv.reader(file)
       for row in reader:
 
@@ -82,9 +82,9 @@ def create_save_sentiment_model():
     plot_graphs(history, "loss")
 
   # download/save the sentiment analysis model and tokenizer
-  model.save('tf_model.keras')
+  model.save('./sentiment_storage/tf_model.keras')
 
-  with open('tokenizer.pickle', 'wb') as handle:
+  with open('./sentiment_storage/tokenizer.pickle', 'wb') as handle:
       pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
@@ -96,13 +96,13 @@ def sentiment_from_sentence(sentence):
   # use the model to predict sentence sentiment values (closer to 0 means negative sentiment AND closer to 1 means positive sentiment)
   #   EXAMPLE INPUT: sentence = "the company had sales increase by 10%"
   
-  with open('tokenizer.pickle', 'rb') as handle:
+  with open('./sentiment_storage/tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
   
   sequences = tokenizer.texts_to_sequences(sentences)
   padded = pad_sequences(sequences, maxlen=100, padding='post', truncating='post')
 
-  loaded_model = tf.keras.models.load_model('tf_model.keras')
+  loaded_model = tf.keras.models.load_model('./sentiment_storage/tf_model.keras')
   predictions = loaded_model.predict(padded)
 
   if testing:

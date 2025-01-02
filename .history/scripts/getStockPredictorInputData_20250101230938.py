@@ -2,14 +2,27 @@ from getPrices import ml_get_historical # pass in like ("AAPL")
 from getNewsArticle import getArticle # pass in like ("AMD", "2024-12-24")
 from sentimentAnalysisML import sentiment_from_sentence # pass in like ("sentence_string")
 
-def df_with_sentiment(ticker):
+import yfinance as yf
+from datetime import datetime, timedelta
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+
+from tensorflow.keras.layers import Input, LSTM, GRU, SimpleRNN, Dense, GlobalMaxPool1D, Attention, Concatenate, Bidirectional, TimeDistributed
+from tensorflow.keras.models import Model
+from tensorflow.keras.optimizers import SGD, Adam
+
+
+def df_with_sentiment(ticker): # gives stock data (dataframe)
 
   stock_data = ml_get_historical(ticker)
 
   # print the dataframe
   if stock_data is not None:
     print("Stock Data for " + ticker + ":\n")
-    #print(stock_data)
+  #print(stock_data)
   else:
     print("Failed to fetch stock data.")
     return "ERROR"
@@ -18,7 +31,7 @@ def df_with_sentiment(ticker):
   sentiment_values = []
   q = 0
   for date in stock_data['Date']:  # Start from index 1 to skip the headers
-    if q % 150 == 0:
+    if q % 150 == 0: # only get new sentiment in increments to avoid too much News API requests from being made
       string_date = date.strftime("%Y-%m-%d")
       article_string = getArticle(ticker, string_date)
       if article_string == "N/A":
@@ -30,8 +43,13 @@ def df_with_sentiment(ticker):
       sentiment_values.append(sentiment_values[q-1])
     q += 1
 
-  #print(sentiment_values)
   stock_data['Sentiment'] = sentiment_values
   # print(stock_data)
 
   return stock_data
+
+
+
+
+
+
