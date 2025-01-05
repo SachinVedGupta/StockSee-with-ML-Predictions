@@ -304,7 +304,7 @@ export default function Home() {
         {chartDisplayData && (
   <>
     {/* Line Chart */}
-    <Line data={chartDisplayData} options={chartDisplayData.options} style={{ marginBottom: "75px" }} />
+    <Line data={chartDisplayData} options={chartDisplayData.options} style={{ marginBottom: "60px" }} />
 
     {/* Title for About Section */}
     <h4 id="title" style={{ textAlign: "center", fontSize: "2.5rem", marginBottom: "10px", marginTop: "45px" }}>
