@@ -1,0 +1,17 @@
+{
+    "dev": {
+        "app_function": "scripts.getPricesFlaskapp",
+        "exclude": [
+            "boto3",
+            "dateutil",
+            "botocore",
+            "s3transfer",
+            "concurrent"
+        ],
+        "aws_region": "us-east-1",
+        "profile_name": null,
+        "project_name": "stocksee-with-m",
+        "runtime": "python3.11",
+        "s3_bucket": "zappa-stocksee-bucket"
+    }
+}
