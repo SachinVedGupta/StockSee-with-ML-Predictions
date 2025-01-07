@@ -9,8 +9,6 @@ import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
 
-import tensorflow as tf
-tf.config.set_visible_devices([], 'GPU')
 
 
 from tensorflow.keras.layers import Input, LSTM, Dense

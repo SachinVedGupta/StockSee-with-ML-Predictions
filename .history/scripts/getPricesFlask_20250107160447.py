@@ -4,7 +4,6 @@ import yfinance as yf
 from datetime import datetime, timedelta
 
 from stockPredictionsWithSentiment import with_sentiment_ml_to_predict
-
 # To run locally
     # within this scripts folder run "python getPricesFlask.py"
     # within main folder run "npm i" then "npm run dev" for front end
