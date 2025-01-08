@@ -27,17 +27,11 @@ export async function fetchStockNews(ticker: string, date: string[]) {
 
     // Specify the type for 'phrase' explicitly
     return text.split('\n').filter((phrase: string) => phrase.trim() !== '');
-  } catch (error: unknown) {
-    // Type guard to check if 'error' has a 'message' property
-    if (error instanceof Error) {
-      console.error("Error fetching stock news:", error.message);
-    } else {
-      console.error("Unknown error occurred:", error);
-    }
+  } catch (error) {
+    console.error("Error fetching stock news:", error.message || error);
     throw new Error("Failed to fetch stock news. Please try again later.");
   }
 }
-
 
 
 
