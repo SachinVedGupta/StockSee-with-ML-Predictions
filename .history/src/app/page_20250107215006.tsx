@@ -65,9 +65,9 @@ export default function Home() {
   async function handleSubmit() {
     setLoading(true); // Start loading
     try {
-      // Backend Deployment: https://stocksee-with-ml-predictions.onrender.com/
-      // LOCAL: const chartResponse = await fetch(`http://127.0.0.1:5000/historical_prices?ticker=${stockSymbol}`);
-      const chartResponse = await fetch(`https://stocksee-with-ml-predictions.onrender.com/historical_prices?ticker=${stockSymbol}`);
+      // Backend Deployment: const chartResponse = await fetch(`http://127.0.0.1:5000/historical_prices?ticker=${stockSymbol}`);
+      // const chartResponse = await fetch(`http://127.0.0.1:5000/historical_prices?ticker=${stockSymbol}`);
+      const chartResponse = await fetch(`http://127.0.0.1:5000/historical_prices?ticker=${stockSymbol}`);
       const chartData = await chartResponse.json();
   
       const dates = chartData[0];

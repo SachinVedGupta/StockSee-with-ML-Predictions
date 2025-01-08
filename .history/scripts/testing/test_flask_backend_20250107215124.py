@@ -2,7 +2,7 @@ import requests
 
 # For testing the getPrices file
 # Define the Flask app's URL and the endpoint
-# Local: BASE_URL = "http://127.0.0.1:5000"
+# Local BASE_URL = "http://127.0.0.1:5000"
 BASE_URL = "https://stocksee-with-ml-predictions.onrender.com/"  # Adjust if the Flask app is hosted elsewhere
 ENDPOINT = "/historical_prices"
 
