@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS  # Import CORS
 import yfinance as yf
 from datetime import datetime, timedelta
@@ -81,11 +81,23 @@ def historical_prices():
     return jsonify(final_graph_values) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
 
 
-PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../public')
-@app.route('/image/<filename>')
-def serve_image(filename):
-    # Serve an image from the 'public' folder
-    return send_from_directory(PUBLIC_FOLDER, filename)
+@app.route('/download-images')
+def download_images(): # for exporting the graphs/plots to the front end
+    # Paths to your images
+    image_paths = [
+        'public/sentiment_accuracy.png',
+        'public/sentiment_loss.jpg',
+        'public/stock_loss.png',
+        'public/stock_predictions.jpg'
+    ]
+
+    zip_io = BytesIO()
+    with ZipFile(zip_io, 'w') as zip_file:
+        for image_path in image_paths:
+            zip_file.write(image_path, os.path.basename(image_path))
+    zip_io.seek(0)
+
+    return send_file(zip_io, mimetype='application/zip', as_attachment=True, download_name='images.zip')
 
 
 if __name__ == '__main__':

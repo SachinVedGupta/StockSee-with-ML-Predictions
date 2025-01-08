@@ -243,20 +243,20 @@ export default function Home() {
     }
   }
   
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
+  const [images, setImages] = useState<string[]>([]);
 
   useEffect(() => {
     // Base URL of the Flask app
-    const baseUrl = 'https://stocksee-with-ml-predictions.onrender.com/image';
+    const baseUrl = 'https://your-flask-app-url.onrender.com/image';
 
     // List of image filenames (you can add or modify this list)
-    const imageFilenames = ['sentiment_accuracy.png', 'sentiment_loss.png', 'stock_loss.png', 'stock_predictions.png'];
+    const imageFilenames = ['sentiment.png', 'image2.jpg', 'image3.png', 'image4.jpg'];
 
     // Construct full URLs for each image
     const imageUrls = imageFilenames.map((filename) => `${baseUrl}/${filename}`);
     
     // Set the image URLs in state
-    setImageUrls(imageUrls);
+    setImages(imageUrls);
   }, []);
   
 
@@ -365,7 +365,7 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[3]}?${new Date().getTime()}`}  // Adding timestamp
+            src={`/stock_predictions.png?${new Date().getTime()}`}  // Adding timestamp
             alt="Dynamic Image 1"
             width={500}
             height={500}
@@ -391,8 +391,8 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[2]}?${new Date().getTime()}`}  // Adding timestamp
-            alt="Stock Loss"
+            src={`/stock_loss.png?${new Date().getTime()}`}  // Adding timestamp
+            alt="Dynamic Image 2"
             width={500}
             height={500}
             style={{ borderRadius: "10px" }}
@@ -416,8 +416,8 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[0]}?${new Date().getTime()}`}  // Adding timestamp
-            alt="Sentiment Accuracy"
+            src={`/sentiment_accuracy.png?${new Date().getTime()}`}  // Adding timestamp
+            alt="Dynamic Image 3"
             width={500}
             height={500}
             style={{ borderRadius: "10px" }}
@@ -441,8 +441,8 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[1]}?${new Date().getTime()}`}  // Adding timestamp
-            alt="Sentiment Loss"
+            src={`/sentiment_loss.png?${new Date().getTime()}`}  // Adding timestamp
+            alt="Dynamic Image 4"
             width={500}
             height={500}
             style={{ borderRadius: "10px" }}

@@ -81,11 +81,6 @@ def historical_prices():
     return jsonify(final_graph_values) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
 
 
-PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../public')
-@app.route('/image/<filename>')
-def serve_image(filename):
-    # Serve an image from the 'public' folder
-    return send_from_directory(PUBLIC_FOLDER, filename)
 
 
 if __name__ == '__main__':

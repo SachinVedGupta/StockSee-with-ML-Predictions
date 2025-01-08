@@ -1,8 +1,11 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS  # Import CORS
 import yfinance as yf
 from datetime import datetime, timedelta
 import os
+from zipfile import ZipFile
+from io import BytesIO
+
 from stockPredictionsWithSentiment import with_sentiment_ml_to_predict
 
 # To run locally
@@ -81,11 +84,24 @@ def historical_prices():
     return jsonify(final_graph_values) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
 
 
-PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../public')
-@app.route('/image/<filename>')
-def serve_image(filename):
-    # Serve an image from the 'public' folder
-    return send_from_directory(PUBLIC_FOLDER, filename)
+@app.route('/download-images')
+def download_images():
+    # Paths to your images
+    image_paths = [
+        'scripts/image1.png',
+        'public/image2.jpg',
+        'public/image3.png',
+        'public/image4.jpg'
+    ]
+
+    # Create a BytesIO object to store the zip file in memory
+    zip_io = BytesIO()
+    with ZipFile(zip_io, 'w') as zip_file:
+        for image_path in image_paths:
+            zip_file.write(image_path, os.path.basename(image_path))
+    zip_io.seek(0)
+
+    return send_file(zip_io, mimetype='application/zip', as_attachment=True, download_name='images.zip')
 
 
 if __name__ == '__main__':

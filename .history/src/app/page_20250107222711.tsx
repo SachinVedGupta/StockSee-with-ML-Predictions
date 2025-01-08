@@ -365,7 +365,7 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[3]}?${new Date().getTime()}`}  // Adding timestamp
+            src={`${imageUrls[0]}?${new Date().getTime()}`}  // Adding timestamp
             alt="Dynamic Image 1"
             width={500}
             height={500}

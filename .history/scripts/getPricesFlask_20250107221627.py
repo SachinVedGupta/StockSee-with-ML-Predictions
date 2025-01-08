@@ -87,6 +87,5 @@ def serve_image(filename):
     # Serve an image from the 'public' folder
     return send_from_directory(PUBLIC_FOLDER, filename)
 
-
 if __name__ == '__main__':
     app.run()

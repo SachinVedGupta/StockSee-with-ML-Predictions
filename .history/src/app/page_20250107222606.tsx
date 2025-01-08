@@ -365,7 +365,7 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[3]}?${new Date().getTime()}`}  // Adding timestamp
+            src={`/stock_predictions.png?${new Date().getTime()}`}  // Adding timestamp
             alt="Dynamic Image 1"
             width={500}
             height={500}
@@ -391,8 +391,8 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[2]}?${new Date().getTime()}`}  // Adding timestamp
-            alt="Stock Loss"
+            src={`/stock_loss.png?${new Date().getTime()}`}  // Adding timestamp
+            alt="Dynamic Image 2"
             width={500}
             height={500}
             style={{ borderRadius: "10px" }}
@@ -441,8 +441,8 @@ export default function Home() {
           padding: "10px"
         }}>
           <Image
-            src={`${imageUrls[1]}?${new Date().getTime()}`}  // Adding timestamp
-            alt="Sentiment Loss"
+            src={`/sentiment_loss.png?${new Date().getTime()}`}  // Adding timestamp
+            alt="Dynamic Image 4"
             width={500}
             height={500}
             style={{ borderRadius: "10px" }}
