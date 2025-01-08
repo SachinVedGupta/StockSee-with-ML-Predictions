@@ -7,7 +7,7 @@ const genAI = new GoogleGenerativeAI(process.env.API_KEY!);
 
 export async function fetchStockNews(ticker: string, date: []) {
   const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-  const prompt = `Tell me the reason (an event) why ${ticker} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
+  const prompt = `Tell me the reason (an event) why ${ticker} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, date and the so. Everything for a specific day must be on one continuous line.`;
 
     //   const prompt = `Tell me the real world event or ${ticker} company announcement/release that happened on/near ${date}. Formatting: Ensure the data for a specific date is on one continuous line. Put no significant event occured if approriate data is not accessible for that date.`;
 
