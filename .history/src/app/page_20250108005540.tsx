@@ -250,7 +250,9 @@ export default function Home() {
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   useEffect(() => {
-    
+    const deployedBackendURL = "https://stocksee-with-ml-predictions.onrender.com";
+  const localBackendURL = "http://127.0.0.1:5000";
+  var backendURL = deployedBackendURL;
     // Base URL of the Flask app
     const baseUrl = `${backendURL}/image`;
 
