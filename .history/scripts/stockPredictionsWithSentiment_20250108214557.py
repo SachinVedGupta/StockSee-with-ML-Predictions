@@ -175,8 +175,7 @@ def with_sentiment_ml_to_predict(ticker_symbol): # returns predictions made usin
             x_current = P[t:t+1]  # Input sequence
             y_pred = model.predict(x_current)
 
-            align_gap = x_current[0][-1][0] - y_pred[0][0] # to align the gap between start price and prediction start
-            print("\n\n\n\n\nTHE GAP IS ", align_gap, "  \n\n\n\n\n")
+            align_gap = x_current[-1] + y_pred[0]
             for i in range(len(y_pred)):
                 y_pred[i] += align_gap
             predictions.append(y_pred)

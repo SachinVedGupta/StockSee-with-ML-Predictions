@@ -174,13 +174,8 @@ def with_sentiment_ml_to_predict(ticker_symbol): # returns predictions made usin
         if t >= 0:  # Ensure there are enough points for a full input sequence
             x_current = P[t:t+1]  # Input sequence
             y_pred = model.predict(x_current)
-
-            align_gap = x_current[0][-1][0] - y_pred[0][0] # to align the gap between start price and prediction start
-            print("\n\n\n\n\nTHE GAP IS ", align_gap, "  \n\n\n\n\n")
-            for i in range(len(y_pred)):
-                y_pred[i] += align_gap
-            predictions.append(y_pred)
-
+            align_gap = x_current[-1] - y_pred[0]
+            predictions.append(y_pred + align_gap)
             time_indices.append(t + T)  # Record the start time of prediction
 
     # Convert predictions to numpy array
