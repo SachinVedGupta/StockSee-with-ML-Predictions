@@ -301,13 +301,10 @@ export default function Home() {
             disabled={loading} // Disable button while loading
           >
             {loading ? (
-              <>
-                <div className="spinner-border text-light" role="status">
-                  <span className="sr-only">Loading...</span>
-                </div>
-                <p className="loading-note">The first request may take longer as the backend powers on</p>
-
-              </>
+              <div className="spinner-border text-light" role="status">
+                <span className="sr-only">Loading...</span>
+              </div>
+              
             ) : (
               'Submit'
             )}

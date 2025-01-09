@@ -302,11 +302,10 @@ export default function Home() {
           >
             {loading ? (
               <>
-                <div className="spinner-border text-light" role="status">
-                  <span className="sr-only">Loading...</span>
-                </div>
-                <p className="loading-note">The first request may take longer as the backend powers on</p>
-
+              <div className="spinner-border text-light" role="status">
+                <span className="sr-only">Loading...</span>
+              </div>
+              <p>The first request may take some time as the backend must power on</p>
               </>
             ) : (
               'Submit'

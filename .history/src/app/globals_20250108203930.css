@@ -76,3 +76,7 @@ h4 {
 .spinner-border.text-light {
   color: #ffffff;
 }
+
+.loading-note {
+  font-size: smaller;
+}

@@ -305,7 +305,7 @@ export default function Home() {
                 <div className="spinner-border text-light" role="status">
                   <span className="sr-only">Loading...</span>
                 </div>
-                <p className="loading-note">The first request may take longer as the backend powers on</p>
+                <p style="font-size: 10px;">The first request may take longer as the backend powers on</p>
 
               </>
             ) : (

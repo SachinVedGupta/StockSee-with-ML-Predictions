@@ -76,3 +76,7 @@ h4 {
 .spinner-border.text-light {
   color: #ffffff;
 }
+
+.small-text {
+  font-size: smaller;
+}
