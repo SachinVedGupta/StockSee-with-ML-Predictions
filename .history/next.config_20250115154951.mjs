@@ -13,7 +13,6 @@
 
 // export default nextConfig;
 
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -27,8 +26,7 @@ const nextConfig = {
         hostname: '**',
       },
     ],
-    unoptimized: true, // Disables image optimization
   },
 }
-
 export default nextConfig;
+
