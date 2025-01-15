@@ -1,3 +1,5 @@
+## USE FULLY DEPLOYED APP --> https://stock-see.vercel.app/ 
+
 ## WHAT IS STOCKSEE
 
 Correlating real-world events with stock prices
@@ -16,6 +18,15 @@ The model takes as input both the stock's daily closing prices and sentiment sco
 Note: The loss/accuracy curves below will stay constant in repeated entries since the pre-trained (on the 30 DOW JONES stocks) model is being loaded in. By going in LOCAL, one can then further train the prediction model and/or sentiment analysis ML models. It can also be set so that every new stock ticker entry further trains and improves the prediction model, though this is not a feature in the deployed version due to RAM constraints.
 
 Can also view GRAPHS showcasing the ML model's performance metrics (loss, accuracy, etc...)
+
+## IMAGES
+
+![image](https://github.com/user-attachments/assets/6d1791ef-b6a0-4015-98b7-5327b8eaa264)
+![image](https://github.com/user-attachments/assets/e47994ef-5cf1-4901-9921-4469549c07e5)
+![image](https://github.com/user-attachments/assets/c2d170f4-9d62-441c-84ce-cce589c314c9)
+![image](https://github.com/user-attachments/assets/3052b4ff-ed52-442e-9b32-cc46468e9b67)
+
+
 
 
 ## USING LOCALLY
