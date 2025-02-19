@@ -1,5 +1,7 @@
 ## USE FULLY DEPLOYED APP --> https://stock-see.vercel.app/ 
 
+Hackathon Project Link: https://devpost.com/software/stocksee 
+
 ## WHAT IS STOCKSEE
 
 Correlating real-world events with stock prices
