@@ -35,7 +35,7 @@ ChartJS.register(
 export default function Home() {
   const deployedBackendURL = "https://stocksee-with-ml-predictions.onrender.com";
   const localBackendURL = "http://127.0.0.1:5000";
-  var backendURL = deployedBackendURL;
+  var backendURL = localBackendURL;
 
   const [stockSymbol, setStockSymbol] = useState("");
   const [chartDisplayData, setChartDisplayData] = useState<any>(null);

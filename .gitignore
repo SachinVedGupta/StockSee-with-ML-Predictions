@@ -38,3 +38,6 @@ next-env.d.ts
 # python virtual environment
 venv
 .venv
+
+# more
+.history
