@@ -14,6 +14,9 @@ async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T
 }
 
 export async function fetchStockNews(ticker: string, date: []) {
+  // Limit to first 5 dates to stay under timeout (declare outside try for catch access)
+  const limitedDates = Array.isArray(date) ? date.slice(0, 5) : [date];
+  
   try {
     const model = genAI.getGenerativeModel({ 
       model: "gemini-2.5-flash",
@@ -23,15 +26,16 @@ export async function fetchStockNews(ticker: string, date: []) {
       }
     });
     
-    // Original: no date limiting
-    const prompt = `Tell me the reason (an event) why ${ticker} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
+    console.log(`Processing ${limitedDates.length} dates out of ${Array.isArray(date) ? date.length : 1} total`);
+    
+    const prompt = `Tell me the reason (an event) why ${ticker} stock price shifted on ${limitedDates} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
 
     console.log('Sending prompt to Gemini API:', prompt);
     
-    // Add 8 second timeout for Gemini API call (Vercel free tier limit)
+    // Add 9 second timeout for Gemini API call (Vercel has 10s limit)
     const result = await withTimeout(
       model.generateContent(prompt),
-      8000
+      9000
     );
     
     const response = result.response;
@@ -41,9 +45,13 @@ export async function fetchStockNews(ticker: string, date: []) {
   } catch (error) {
     console.error('Error in fetchStockNews:', error);
     if (error instanceof Error && error.message === 'Request timeout') {
-      throw new Error('Gemini API request timed out. Please try again.');
+      // Return placeholder data instead of throwing
+      console.log('Timeout - returning placeholder data');
+      return limitedDates.map((d: string) => `${d}: Event data temporarily unavailable due to timeout`);
     }
-    throw new Error(`Failed to fetch stock news: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    console.error('Gemini API error - returning placeholder');
+    // Return placeholder instead of throwing to avoid breaking the UI
+    return ['Unable to fetch news data. Please try again later.'];
   }
 }
 
