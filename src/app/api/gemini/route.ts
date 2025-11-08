@@ -28,10 +28,10 @@ export async function POST(req: Request) {
         const {stockSymbol, date} = await req.json()
         console.log('Fetching news for:', stockSymbol, date);
         
-        if (!process.env.API_KEY) {
-            console.error('API_KEY is not set in environment variables');
+        if (!process.env.GEMINI_API_KEY) {
+            console.error('GEMINI_API_KEY is not set in environment variables');
             return NextResponse.json(
-                { error: 'API_KEY is not configured' },
+                { error: 'GEMINI_API_KEY is not configured' },
                 { status: 500 }
             )
         }
