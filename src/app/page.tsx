@@ -104,12 +104,8 @@ export default function Home() {
       }
   
       const news = await axios.post("/api/gemini", { stockSymbol, date });
-      const images: { data: { news: string } } = await axios.post(
-        "/api/images",
-        { stockSymbol, date }
-      );
   
-      const realImages = getImageUrl(images.data.news);
+      const realImages = getImageUrl(stockSymbol + " ticker company office");
       realImages.then((url) => {
         setRealImages(url);
       });
