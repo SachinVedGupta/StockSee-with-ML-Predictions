@@ -1,8 +1,8 @@
 import { fetchStockNews } from "../../../../utils"
 import { NextResponse } from "next/server"
 
-// Increase timeout for this API route (Vercel free tier max is 10s)
-export const maxDuration = 10; // 10 seconds
+// Increase timeout for this API route
+export const maxDuration = 60; // 60 seconds
 
 export async function POST(req: Request) {
     try {
