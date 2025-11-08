@@ -104,6 +104,9 @@ export default function Home() {
       }
   
       const news = await axios.post("/api/gemini", { stockSymbol, date });
+      console.log('News response from Gemini:', news.data);
+      console.log('Dates array:', date);
+      
       const images: { data: { news: string } } = await axios.post(
         "/api/images",
         { stockSymbol, date }
@@ -221,11 +224,26 @@ export default function Home() {
                 const point = changes.find((p: any) => p.index === tooltipItem.dataIndex);
                 if (point) {
                   let theanswer = "N/A";
-                  for (const thing in news.data.news) {
-                    if (news.data.news[thing].includes(point.x)) {
-                      theanswer = news.data.news[thing];
+                  
+                  // Try to match by index first (more reliable)
+                  const dateIndex = date.indexOf(point.x);
+                  if (dateIndex >= 0 && news.data.news && news.data.news[dateIndex]) {
+                    theanswer = news.data.news[dateIndex];
+                  } else {
+                    // Fallback: try to find by date string in response
+                    for (const thing in news.data.news) {
+                      if (news.data.news[thing] && news.data.news[thing].includes(point.x)) {
+                        theanswer = news.data.news[thing];
+                        break;
+                      }
                     }
                   }
+                  
+                  // If still N/A, show generic message
+                  if (theanswer === "N/A" && news.data.news && news.data.news.length > 0) {
+                    theanswer = "Check console for news data";
+                  }
+                  
                   return `Price: ${tooltipItem.raw.toFixed(2)},  News: ${theanswer}`;
                 }
                 return `Price: ${tooltipItem.raw.toFixed(2)}`;
