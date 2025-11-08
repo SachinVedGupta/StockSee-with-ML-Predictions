@@ -23,12 +23,8 @@ export async function fetchStockNews(ticker: string, date: []) {
       }
     });
     
-    // Limit dates to first 2 to avoid timeout
-    const dates = Array.isArray(date) ? date.slice(0, 2) : [date];
-    const dateStr = dates.join(', ');
-    
-    // Very simple prompt to get fast response
-    const prompt = `Why did ${ticker} stock change on ${dateStr}? One sentence per date.`;
+    // Original: no date limiting
+    const prompt = `Tell me the reason (an event) why ${ticker} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
 
     console.log('Sending prompt to Gemini API:', prompt);
     
