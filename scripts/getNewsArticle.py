@@ -1,8 +1,10 @@
 import requests
+import os
 
 def getArticle(ticker, date):
   # 2024-12-30 is format of date
-  url = f"https://api.thenewsapi.com/v1/news/all?api_token=riTKpnJ9W4pSkEDcIKHAPg0okfsxDiJXDmCg4n18&search={ticker}&published_on={date}"
+  api_token = os.environ.get('NEWS_API_TOKEN', 'riTKpnJ9W4pSkEDcIKHAPg0okfsxDiJXDmCg4n18')
+  url = f"https://api.thenewsapi.com/v1/news/all?api_token={api_token}&search={ticker}&published_on={date}"
   article = "N/A"
 
 

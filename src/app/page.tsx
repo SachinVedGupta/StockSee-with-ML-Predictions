@@ -40,9 +40,11 @@ export default function Home() {
   const [stockSymbol, setStockSymbol] = useState("");
   const [chartDisplayData, setChartDisplayData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [showSummary, setShowSummary] = useState(false);
+  const [showGraphs, setShowGraphs] = useState(false);
   async function getImageUrl(prompt: string) {
-    var apiKey = "AIzaSyB41BZPIS7OSfBj81rbh1HjMdsiAYr_ATk";
-    var searchEngineId = "41624844768c14c9a";
+    var apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
+    var searchEngineId = process.env.NEXT_PUBLIC_SEARCH_ENGINE_ID;
     var query = prompt; // This could be a static query or based on the prompt/content
     var url =
       "https://www.googleapis.com/customsearch/v1?key=" +
@@ -271,16 +273,16 @@ export default function Home() {
           className="flex flex-col items-center justify-center w-full max-w-md mx-auto"
           id="cont-it"
         >
-          <div id="the-div">
-            <h4 id="title">StockSee</h4>
-            {/* <Image
+          <div id="the-div" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <Image
               src={theimg}
               id="the-img"
               alt="Logo"
-              width={100}
-              height={100}
-              max-height={100}
-            /> */}
+              width={90}
+              height={90}
+              style={{ objectFit: 'contain' }}
+            />
+            <h4 id="title">StockSee</h4>
           </div>
 
           <input
@@ -343,21 +345,69 @@ export default function Home() {
       </p>
     </div>
 
-    {/* Description Paragraphs */}
-    <div style={{ marginBottom: "0px", textAlign: "center" }}>
-      <p style={{ width: "80%", margin: "0 auto" }}>
-        The yellow dots on the graph above represent predictions for the next 50 days of stock prices (into the future), made using a TensorFlow LSTM machine learning model. Each prediction is based on a batch of 200 previous daily stock prices, and the model forecasts the prices for the upcoming 50 days. A total of 1500 days of historical data is utilized in the training and validation process for each stock. By repeatedly training the model on all 30 stocks in the DOW JONES, a more comprehensive model has been created, of which is used to predicted the entered stock.
-      </p>
-      <p style={{ width: "80%", margin: "20px auto", marginBottom: "10px"}}>
-        The model takes as input both the stock's daily closing prices and sentiment scores derived from public news articles. These sentiment scores are generated through a custom natural language processing (NLP) model, developed using TensorFlow and trained on a Kaggle dataset. The NLP model analyzes news articles related to the company, gathered via a news API, to assign a sentiment score for each day. By including not only the historical stock prices but also external factors like public sentiment and company news, the model is better equipped to predict future stock prices. Simply relying on past prices is insufficient, as factors such as company performance, innovation, and public perception play a critical role, making sentiment analysis an essential input for the prediction model. Furthermore, by creating a comprehensive model trained on 30 stocks (the ones in the DOW JONES), the prediction model used becomes even more accurate. 
-      </p>
-      <p style={{ width: "80%", margin: "20px auto", marginBottom: "10px"}}>
-        Note: The loss/accuracy curves below will stay constant in repeated entries since the pre-trained (on the 30 DOW JONES stocks) model is being loaded in. By going in LOCAL, one can then further train the prediction model and/or sentiment analysis ML models. It can also be set so that every new stock ticker entry further trains and improves the prediction model, though this is not a feature in the deployed version due to RAM constraints.
-      </p>
+    {/* Expandable Summary Section */}
+    <div style={{ marginBottom: "20px", textAlign: "center", width: "80%", margin: "20px auto" }}>
+      <button
+        onClick={() => setShowSummary(!showSummary)}
+        style={{
+          width: "100%",
+          padding: "15px",
+          fontSize: "18px",
+          fontWeight: "bold",
+          backgroundColor: "#3b82f6",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}
+      >
+        <span>SUMMARY</span>
+        <span>{showSummary ? "▲" : "▼"}</span>
+      </button>
+      {showSummary && (
+        <div style={{ marginTop: "15px", textAlign: "left", padding: "20px", backgroundColor: "#f3f4f6", borderRadius: "8px" }}>
+          <p style={{ marginBottom: "15px" }}>
+            The yellow dots on the graph above represent predictions for the next 50 days of stock prices (into the future), made using a TensorFlow LSTM machine learning model. Each prediction is based on a batch of 200 previous daily stock prices, and the model forecasts the prices for the upcoming 50 days. A total of 1500 days of historical data is utilized in the training and validation process for each stock. By repeatedly training the model on all 30 stocks in the DOW JONES, a more comprehensive model has been created, of which is used to predicted the entered stock.
+          </p>
+          <p style={{ marginBottom: "15px" }}>
+            The model takes as input both the stock's daily closing prices and sentiment scores derived from public news articles. These sentiment scores are generated through a custom natural language processing (NLP) model, developed using TensorFlow and trained on a Kaggle dataset. The NLP model analyzes news articles related to the company, gathered via a news API, to assign a sentiment score for each day. By including not only the historical stock prices but also external factors like public sentiment and company news, the model is better equipped to predict future stock prices. Simply relying on past prices is insufficient, as factors such as company performance, innovation, and public perception play a critical role, making sentiment analysis an essential input for the prediction model. Furthermore, by creating a comprehensive model trained on 30 stocks (the ones in the DOW JONES), the prediction model used becomes even more accurate.
+          </p>
+          <p>
+            Note: The loss/accuracy curves below will stay constant in repeated entries since the pre-trained (on the 30 DOW JONES stocks) model is being loaded in. By going in LOCAL, one can then further train the prediction model and/or sentiment analysis ML models. It can also be set so that every new stock ticker entry further trains and improves the prediction model, though this is not a feature in the deployed version due to RAM constraints.
+          </p>
+        </div>
+      )}
     </div>
 
-    {/* 2x2 Grid for Images */}
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
+    {/* Expandable Graphs Section */}
+    <div style={{ marginBottom: "20px", textAlign: "center", width: "80%", margin: "20px auto" }}>
+      <button
+        onClick={() => setShowGraphs(!showGraphs)}
+        style={{
+          width: "100%",
+          padding: "15px",
+          fontSize: "18px",
+          fontWeight: "bold",
+          backgroundColor: "#3b82f6",
+          color: "white",
+          border: "none",
+          borderRadius: "8px",
+          cursor: "pointer",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center"
+        }}
+      >
+        <span>ML MODEL GRAPHS</span>
+        <span>{showGraphs ? "▲" : "▼"}</span>
+      </button>
+      {showGraphs && (
+        <div style={{ marginTop: "15px" }}>
+          {/* 2x2 Grid for Images */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginTop: "20px" }}>
       
       {/* Module 1 */}
       <div style={{
@@ -461,6 +511,9 @@ export default function Home() {
         </p>
       </div>
       
+          </div>
+        </div>
+      )}
     </div>
   </>
 )}

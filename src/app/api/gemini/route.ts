@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { NextResponse } from "next/server"
 
-const genAI = new GoogleGenerativeAI("AIzaSyCqBxTRJPLjaTUXFrwMhOo5dpUx5fal2mE");
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 async function fetchStockNews(ticker: string, date: []) {
   try {
