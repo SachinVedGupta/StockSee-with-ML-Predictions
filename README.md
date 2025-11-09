@@ -47,6 +47,7 @@ graph TB
     style E fill:#10b981,color:#fff
     style F fill:#f59e0b,color:#fff
     style G fill:#f59e0b,color:#fff
+```
 
 ## WHAT IT DOES
 
