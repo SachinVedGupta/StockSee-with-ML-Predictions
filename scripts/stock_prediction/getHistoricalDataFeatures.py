@@ -43,19 +43,21 @@ def get_stock_features_with_sentiment(ticker):
   stock_data = get_stock_features(ticker)
 
   sentiment_values = []
+  last_sentiment = 0.5  # default neutral sentiment
 
-  for day in range(0, len(stock_data['Date']), 150): # only get new sentiment in increments to avoid too much News API requests from being made
-    string_date = stock_data['Date'][day].strftime("%Y-%m-%d")
+  # generate sentiment for every 150th day and fill in between
+  for day in range(len(stock_data['Date'])):
+    if day % 150 == 0:  # fetch new sentiment every 150 days
+      string_date = stock_data['Date'][day].strftime("%Y-%m-%d")
+      article_string = get_article(ticker, string_date)
+      
+      if article_string == "N/A":
+        last_sentiment = float(0.5000)
+      else:
+        sentiment_score = sentiment_from_sentence(article_string)
+        last_sentiment = round(float(sentiment_score), 4)
     
-    article_string = get_article(ticker, string_date)
-    if article_string == "N/A":
-      sentiment_values.append(float(0.5000))
-    else:
-      sentiment_score = sentiment_from_sentence(article_string)
-      sentiment_values.append(round(float(sentiment_score), 4))
-    
-    for i in range(day, day+150):
-      sentiment_values.append(sentiment_values[i-1])
+    sentiment_values.append(last_sentiment)
 
   stock_data['Sentiment'] = sentiment_values
   return stock_data
