@@ -7,6 +7,47 @@ Hackathon Project Link: https://devpost.com/software/stocksee
 Correlating real-world events with stock prices
 - To foster an understanding of the stock price curve and showcase that it doesn't just randomly move but is actually based on real life and the real world (industry trends, the socioeconomic state, company earnings reports, product releases)
 
+```mermaid
+graph TB
+    subgraph "Frontend Layer"
+        A[Next.js 14 App<br/>page.tsx] --> B[Chart.js Visualization]
+        A --> C[User Input Form]
+    end
+    
+    subgraph "API Layer"
+        D[Flask Backend<br/>getPricesFlask.py]
+        E[Next.js API<br/>route.ts]
+    end
+    
+    subgraph "ML Pipeline"
+        F[Stock Prediction<br/>LSTM Model]
+        G[Sentiment Analysis<br/>NLP Model]
+        H[Feature Engineering]
+    end
+    
+    subgraph "External Services"
+        I[Yahoo Finance API]
+        J[TheNewsAPI]
+        K[Google Gemini AI]
+        L[Google Image Search]
+    end
+    
+    A -->|GET /predicted_prices| D
+    A -->|POST /api/gemini| E
+    D --> F
+    F --> H
+    H --> I
+    H --> G
+    G --> J
+    E --> K
+    A --> L
+    
+    style A fill:#3b82f6,color:#fff
+    style D fill:#10b981,color:#fff
+    style E fill:#10b981,color:#fff
+    style F fill:#f59e0b,color:#fff
+    style G fill:#f59e0b,color:#fff
+
 ## WHAT IT DOES
 
 Users are guided to a search bar where they can search a company stock for example "AAPL" and almost instantly they can see the stock price over the last two years as a graph, with green and red dots spread out on the line graph. When they hover over the dots, the green dots explain why there is a general increasing trend in the stock and a news article to back it up, along with the price change from the previous day and what it is predicted to be from. An image shows up on the side of the graph showing the company image as well.
