@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from getSentimentDataFrame import df_with_sentiment
+from stock_prediction.getHistoricalDataFeatures import get_stock_features_with_sentiment
 
 import matplotlib
 matplotlib.use('Agg')
@@ -12,30 +12,23 @@ from sklearn.preprocessing import StandardScaler
 import tensorflow as tf
 tf.config.set_visible_devices([], 'GPU')
 
-
 from tensorflow.keras.layers import Input, LSTM, Dense
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 
-
-
-def with_sentiment_ml_to_predict(ticker_symbol): # returns predictions made using both Close price and Sentiment Score as an input
+# ML (LSTM) model that predicts the Stock Price for 50 days into the future based on the previous 200 day Stock Prices and their News Sentiment Scores
+def with_sentiment_ml_to_predict(ticker_symbol):
     test = True
     trainSetting = 0
         # DEFAULT: 0 (must not be 1/2) for using existing multi-trained model (trained on the 30 Dow Jones stocks)
         # 1 for training based on just the entered stocks historical data
         # 2 for adding to multi-trained model and enhancing it by training it with this stock as additional data
-    # stock_data = ml_get_historical(ticker_symbol)
 
-    stock_data = df_with_sentiment(ticker_symbol)
+    stock_data = get_stock_features_with_sentiment(ticker_symbol)
+    close_series = stock_data['Close'].values.reshape(-1, 1)
+    sentiment_series = stock_data['Sentiment'].values.reshape(-1, 1)
 
-    # series represents all the stock prices (each value is the price for that day)
-    # plt.plot(stock_data.index, stock_data['Close'])
-    close_series = stock_data['Close'].values.reshape(-1, 1) # percent change or close or sentiment
-    sentiment_series = stock_data['Sentiment'].values.reshape(-1, 1) # percent change or close or sentiment
-    # print(series)
-
-    # Normalize the training data to make it easier for model to work with
+    # normalize the training data to make it easier for model to work with
     close_scaler = StandardScaler()
     close_scaler.fit(close_series[:])
     close_series = close_scaler.transform(close_series).flatten()
@@ -44,64 +37,50 @@ def with_sentiment_ml_to_predict(ticker_symbol): # returns predictions made usin
     sentiment_scaler.fit(sentiment_series[:])
     sentiment_series = sentiment_scaler.transform(sentiment_series).flatten()
 
-    # Combine into a single dataset (series) with two features
+    # combine into a single dataset (series) with two features
     series = np.stack((close_series, sentiment_series), axis=-1)
 
-    T = 200  # Past values (input sequence length)
-    N = 50   # Future values to predict (output sequence length)
+    T = 200  # past values (input sequence length)
+    N = 50   # future values to predict (output sequence length)
 
-    # Build the dataset
+    # build the dataset
     X = []
     Y = []
-    for t in range(0, len(series) - T - N + 1, 1):  # Sliding window with step 1
-        x = series[t:t+T]  # Input sequence to get previous 100 values
-        y = series[t+T:t+T+N, 0]  # Outputs (target close prices only for y)
+    for t in range(0, len(series) - T - N + 1, 1):  # sliding window
+        x = series[t:t+T]  # input sequence to get previous 200 values
+        y = series[t+T:t+T+N, 0]  # allocating 50 prediction targets (supervised learning)
         X.append(x)
         Y.append(y)
 
 
-    X = np.array(X).reshape(-1, T, 2)  # Shape should be (Num of Dates, T, 2)
-    Y = np.array(Y)  # Shape should be (Num of Dates, N)
+    X = np.array(X).reshape(-1, T, 2)  # shape = (Num of Dates, T, 2)
+    Y = np.array(Y)  # shape = (Num of Dates, N)
 
     print(" INPUT X.shape", X.shape, "OUTPUT TARGETS Y.shape", Y.shape)
 
-
-
-    # Split data into training and validation
-    train_size = int(len(X) * 0.6)  # Use ?% of data for training, rest % for validation
+    # split data into training and validation
+    train_size = int(len(X) * 0.6)  # use 60% of data for training, rest 40% for validation
     X_train, Y_train = X[:train_size], Y[:train_size]
     X_val, Y_val = X[train_size:], Y[train_size:]
 
-
-
-    # Train the model or load in existing one based on trainSetting value
     if trainSetting == 1: # train a model based on just the previous stock's data
-        # Build the LSTM model
-
+        # build the LSTM model and train the model on it
         i = Input(shape=(T, 2))
-        x = LSTM(100)(i)  # More units for better learning
-        x = Dense(N)(x)  # Predict N values (future prices)
+        x = LSTM(100)(i)  # more units for better learning
+        x = Dense(N)(x)  # predict N values (future prices)
         model = Model(i, x)
         model.compile(loss='mse', optimizer=Adam(learning_rate=0.001))
 
         print(model.summary())
         r = model.fit(
-            X_train, Y_train,  # Use training data
+            X_train, Y_train,  # use training data
             epochs=10,
-            validation_data=(X_val, Y_val)  # Use validation data
+            validation_data=(X_val, Y_val)  # use validation data
         )
         
         model.save('./sentiment_storage/individual_stock_tf_model.keras')
-        # model.save('./sentiment_storage/DOW_Trained_stock_tf_model.keras')
 
         # plot the loss graph
-
-        print("\n\n\n\n\n\n")
-        print(r.history)
-        print(len(r.history["loss"]))  # Should be > 0 if the model is training correctly
-        print("\n\n\n\n\n\n")
-
-
         plt.figure(figsize=(10, 6))
         the_title = f"Loss Function (MSE) for {ticker_symbol} prediction model"
         plt.plot(r.history["loss"])
@@ -113,7 +92,7 @@ def with_sentiment_ml_to_predict(ticker_symbol): # returns predictions made usin
         plt.savefig("../public/stock_loss.png", dpi=300, bbox_inches='tight')
         plt.close()
     elif trainSetting == 2:
-        print(1)
+        # fine-tune the general purpose model further on this stock's data
         model = tf.keras.models.load_model('./sentiment_storage/DOW_Trained_stock_tf_model.keras')
         model.compile(loss='mse', optimizer=Adam(learning_rate=0.0003)) # recompile with lower learning rate to prevent overfitting to this new dataset
 

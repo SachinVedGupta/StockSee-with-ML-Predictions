@@ -3,7 +3,7 @@ from flask_cors import CORS  # Import CORS
 import yfinance as yf
 from datetime import datetime, timedelta
 import os
-from stockPredictionsWithSentiment import with_sentiment_ml_to_predict
+from stock_prediction.stockPredictionWithSentimentModel import with_sentiment_ml_to_predict
 
 # To run locally
     # within this scripts folder run "python getPricesFlask.py"
