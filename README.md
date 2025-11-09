@@ -10,8 +10,9 @@ Correlating real-world events with stock prices
 ```mermaid
 graph TB
     subgraph "Frontend Layer"
-        A[Next.js 14 App<br/>page.tsx] --> B[Chart.js Visualization]
-        A --> C[User Input Form]
+        A[Next.js 14 App<br/>page.tsx] --> B["4. Chart.js Visualization"]
+        A --> C["1. User Input Form"]
+        A --> S["3. Significant Shift<br/>Detection"]
     end
     
     subgraph "API Layer"
@@ -29,11 +30,11 @@ graph TB
         I[Yahoo Finance API]
         J[TheNewsAPI]
         K[Google Gemini AI]
-        L[Google Image Search]
+        L["5. Google Image Search"]
     end
     
-    A -->|GET /predicted_prices| D
-    A -->|POST /api/gemini| E
+    A -->|2. GET /predicted_prices| D
+    S -->|POST /api/gemini<br/>with dates| E
     D --> F
     F --> H
     H --> I
@@ -43,6 +44,7 @@ graph TB
     A --> L
     
     style A fill:#3b82f6,color:#fff
+    style S fill:#8b5cf6,color:#fff
     style D fill:#10b981,color:#fff
     style E fill:#10b981,color:#fff
     style F fill:#f59e0b,color:#fff
