@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
-from sentiment.getNewsArticle import getArticle # pass in like ("AMD", "2024-12-24")
+from sentiment.getNewsArticle import get_article # pass in like ("AMD", "2024-12-24")
 from sentiment.sentimentAnalysisModel import sentiment_from_sentence # pass in like ("sentence_string")
 
 
@@ -47,7 +47,7 @@ def get_stock_features_with_sentiment(ticker):
   for day in range(0, len(stock_data['Date']), 150): # only get new sentiment in increments to avoid too much News API requests from being made
     string_date = stock_data['Date'][day].strftime("%Y-%m-%d")
     
-    article_string = getArticle(ticker, string_date)
+    article_string = get_article(ticker, string_date)
     if article_string == "N/A":
       sentiment_values.append(float(0.5000))
     else:

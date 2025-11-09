@@ -1,92 +1,41 @@
 from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS  # Import CORS
-import yfinance as yf
-from datetime import datetime, timedelta
+from flask_cors import CORS
 import os
-from stock_prediction.stockPredictionWithSentimentModel import with_sentiment_ml_to_predict
+from stock_prediction.stockPredictionWithSentimentModel import predict_stock_price
 
 # To run locally
     # within this scripts folder run "python getPricesFlask.py"
     # within main folder run "npm i" then "npm run dev" for front end
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Function to fetch historical prices from Yahoo Finance
-def get_historical_price(ticker):
-    try:
-        # Create a Ticker object
-        stock = yf.Ticker(ticker)
-
-        # Define the date range: last 3 months
-        end_date = datetime.today()
-        start_date = end_date - timedelta(days=700)
-
-        # Fetch historical data
-        historical_data = stock.history(start=start_date, end=end_date)
-
-        # Limit the data to only the "Date" and "Close" columns
-        limited_data = historical_data[['Close']]
-
-        # Convert the index (Date) to a column
-        limited_data.reset_index(inplace=True)
-
-        # Convert the DataFrame to a list of dictionaries
-        data_list = [
-            {'date': row['Date'].strftime('%Y-%m-%d'), 'close': row['Close']}
-            for _, row in limited_data.iterrows()
-        ]
-
-        return data_list
-
-    except Exception as e:
-        print(f"Error fetching data for {ticker}: {e}")
-        return None
-
-
-@app.route('/historical_prices', methods=['GET'])
-def historical_prices():
-    # Get the ticker symbol from the query string
+@app.route('/predicted_prices', methods=['GET'])
+def predicted_prices():
     ticker = request.args.get('ticker')
     if not ticker:
         return jsonify({"error": "Ticker symbol is required"}), 400
 
-    # Fetch historical data for the ticker
-    data = get_historical_price(ticker)
-    if data is None:
-        return jsonify({"error": f"Failed to fetch data for {ticker}"}), 500
+    try:
+        print(f"\n\nFetching data and predictions for {ticker}...\n")
+        result = predict_stock_price(ticker)
+        
+        print(f"Predictions complete for {ticker}\n\n")
 
-    # Separate the dates and prices for easier frontend handling
-    dates = [item['date'] for item in data]
-    prices = [item['close'] for item in data]
-
-    # Add seperator/dummy values to distinguish between real and predicted values
-    dates.append("Seperate-Dates")
-    prices.append("Seperate-Prices")
-
-    print("\n\n\n\n\nML STARTING")
-
-    # the_ml_predictions = ml_to_predict(ticker) # for stock price 
-    the_ml_predictions = with_sentiment_ml_to_predict(ticker)
-    print("\n\n\n\n\nML DONE")
-    the_ml_predictions[0] = the_ml_predictions[0].tolist()
-    print(the_ml_predictions)
-    print("\n\n\nTHE ML PREDICTIONS ARE ABOVE\n\n\n")
-    final_graph_values = []
-    final_graph_values.append(dates + the_ml_predictions[1])
-    final_graph_values.append(prices + the_ml_predictions[0])
-    print(final_graph_values)
-    print("\n\nDONE\n\n")
-
-    return jsonify(final_graph_values) # dates = list where each item is a date    AND    # prices = list where each item is corresponding stock price
-
+        # Combine historical (recent 700 days for frontend display, though model uses all 1800 for training) and prediction data (future 50 days) with separator
+        all_dates = result['historical_dates'][-700:] + ["Seperate-Dates"] + result['prediction_dates']
+        all_prices = result['historical_prices'][-700:] + ["Seperate-Prices"] + result['predictions']
+        
+        return jsonify([all_dates, all_prices])
+    
+    except Exception as e:
+        print(f"Error processing {ticker}: {e}")
+        return jsonify({"error": f"Failed to process data for {ticker}"}), 500
 
 PUBLIC_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../public')
 @app.route('/image/<filename>')
 def serve_image(filename):
-    # Serve an image from the 'public' folder
     return send_from_directory(PUBLIC_FOLDER, filename)
-
 
 if __name__ == '__main__':
     app.run()

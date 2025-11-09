@@ -2,7 +2,7 @@ import requests
 import os
 
 # for a specific stock and date, get the most relevant article about them
-def getArticle(ticker, date):
+def get_article(ticker, date):
   api_token = os.environ.get('NEWS_API_TOKEN', 'riTKpnJ9W4pSkEDcIKHAPg0okfsxDiJXDmCg4n18')
   url = f"https://api.thenewsapi.com/v1/news/all?api_token={api_token}&search={ticker}&published_on={date}"
   

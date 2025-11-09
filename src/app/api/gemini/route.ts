@@ -3,26 +3,9 @@ import { NextResponse } from "next/server"
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
-async function fetchStockNews(ticker: string, date: []) {
-  try {
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-    const prompt = `Tell me the reason (an event) why ${ticker} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
+export const maxDuration = 60;
 
-    console.log('Sending prompt to Gemini API:', prompt);
-    const result = await model.generateContent(prompt);
-    const response = result.response;
-    const text = response.text()
-    console.log('Gemini response received');
-    return text.split('\n').filter(phrase => phrase.trim() !== '');
-  } catch (error) {
-    console.error('Error in fetchStockNews:', error);
-    throw new Error(`Failed to fetch stock news: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
-
-// Increase timeout for this API route
-export const maxDuration = 60; // 60 seconds
-
+// get stock price shift explanations for a certain ticker on many dates
 export async function POST(req: Request) {
     try {
         const {stockSymbol, date} = await req.json()
@@ -36,10 +19,17 @@ export async function POST(req: Request) {
             )
         }
         
-        const news = await fetchStockNews(stockSymbol, date)
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const prompt = `Tell me the reason (an event) why ${stockSymbol} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
+
+        console.log('Sending prompt to Gemini API:', prompt);
+        const result = await model.generateContent(prompt);
+        const response = result.response.text();
+        const news = response.split('\n').filter(phrase => phrase.trim() !== '');
+
         console.log('News fetched successfully');
-        
         return NextResponse.json({ news })
+        
     } catch (error) {
         console.error('Error in Gemini API route:', error);
         return NextResponse.json(
