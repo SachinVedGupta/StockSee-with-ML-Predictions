@@ -19,7 +19,7 @@ export async function POST(req: Request) {
             )
         }
         
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
         const prompt = `Tell me the reason (an event) why ${stockSymbol} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
 
         console.log('Sending prompt to Gemini API:', prompt);

@@ -1,5 +1,6 @@
 "use client";
 
+// IMPORTS
 import React, { useEffect, useState } from "react";
 import "chart.js/auto";
 import { Line } from "react-chartjs-2";
@@ -17,6 +18,7 @@ import {
   Legend,
 } from "chart.js";
 
+// CHART.JS CONFIGURATION
 ChartJS.register(
   Title,
   Tooltip,
@@ -27,19 +29,30 @@ ChartJS.register(
   LineElement
 );
 
+// MAIN COMPONENT
 export default function Home() {
+  // BACKEND CONFIGURATION
   const deployedBackendURL =
     "https://stocksee-with-ml-predictions.onrender.com";
   const localBackendURL = "http://127.0.0.1:5000";
-  var backendURL = deployedBackendURL;
+  const backendURL = deployedBackendURL;
 
+  // COMPONENT STATE
   const [stockSymbol, setStockSymbol] = useState("");
   const [chartDisplayData, setChartDisplayData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
+  const [realImages, setRealImages] = useState(null);
+  const [imageUrls, setImageUrls] = useState<string[]>([]);
 
-  // get image of a companies office via google image search
+  // HELPER FUNCTIONS
+
+  /**
+   * Fetches company office image via Google Image Search API
+   * @param prompt - Search query for the image
+   * @returns URL of the first image result or a default logo
+   */
   async function getImageUrl(prompt: string) {
     var apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
     var searchEngineId = process.env.NEXT_PUBLIC_SEARCH_ENGINE_ID;
@@ -57,33 +70,37 @@ export default function Home() {
 
     if (results.items && results.items.length > 0) {
       console.log(results.items[0].link);
-      return results.items[0].link; // return the first image's URL
+      return results.items[0].link;
     } else {
       console.log("logo");
-      return "https://cdn.discordapp.com/attachments/1208274732227764264/1208595162914103376/logo-no-background.png?ex=65e3daf5&is=65d165f5&hm=4d088d6dd1e4fb2cb3e9d75785f38efe79888a31a8d523724e00af838ff36143&"; // Return null if no images found
+      return "https://cdn.discordapp.com/attachments/1208274732227764264/1208595162914103376/logo-no-background.png?ex=65e3daf5&is=65d165f5&hm=4d088d6dd1e4fb2cb3e9d75785f38efe79888a31a8d523724e00af838ff36143&";
     }
   }
 
-  const [realImages, setRealImages] = useState(null);
+  // DATA FETCHING AND CHART GENERATION
 
+  /**
+   * Main function to fetch stock data, predictions, and news
+   * Processes the data and generates chart configuration
+   */
   async function handleSubmit() {
-    setLoading(true); // Start loading
+    setLoading(true);
     try {
-      // LOCAL: const chartResponse = await fetch(`http://127.0.0.1:5000/historical_prices?ticker=${stockSymbol}`);
+      // Fetch predicted prices from backend
       const chartResponse = await fetch(
         `${backendURL}/predicted_prices?ticker=${stockSymbol}`
       );
-      // const chartResponse = await fetch(`https://stocksee-with-ml-predictions.onrender.com/historical_prices?ticker=${stockSymbol}`);
       const chartData = await chartResponse.json();
 
       const dates = chartData[0];
       const prices = chartData[1];
 
-      // Identify significant rise or drop points over a rolling window of 30 days
+      // IDENTIFY SIGNIFICANT PRICE CHANGES
+      // Calculate significant rise/drop points using a rolling window
       const significantPoints: any[] = [];
       const windowSize = 20; // Window size for delta calculation
-      const threshold = 0.12; // Example threshold for significant change (12%)
-      const minDistance = 30; // Minimum distance between significant points (number of days)
+      const threshold = 0.12; // Threshold for significant change (12%)
+      const minDistance = 30; // Minimum distance between significant points (days)
 
       const changes: any[] = [];
       const date: any[] = [];
@@ -104,28 +121,24 @@ export default function Home() {
         }
       }
 
+      // Fetch news analysis for significant dates
       const news = await axios.post("/api/gemini", { stockSymbol, date });
 
+      // Fetch company office image
       const realImages = getImageUrl(stockSymbol + " ticker company office");
       realImages.then((url) => {
         setRealImages(url);
       });
 
+      // SEPARATE HISTORICAL AND PREDICTED DATA
       const separateDateIndex = dates.indexOf("Seperate-Dates");
 
-      /////////////
-
-      // Get the value to the left of the index
+      // Bridge the gap between historical and predicted data
       const valueToLeft = dates[separateDateIndex - 1];
-
-      // Insert the value at the right of the separateDateIndex
       dates.splice(separateDateIndex + 1, 0, valueToLeft);
-
-      // Similarly for prices array, assuming it follows the same structure
       prices.splice(separateDateIndex + 1, 0, prices[separateDateIndex - 1]);
 
-      ////////////
-
+      // Split data into historical (first part) and predictions (second part)
       const firstPartDates = dates.slice(0, separateDateIndex);
       const firstPartPrices = prices.slice(0, separateDateIndex);
 
@@ -133,88 +146,85 @@ export default function Home() {
       const uniqueSecondPartDates = new Set(secondPartDates);
       const secondPartPrices = prices.slice(separateDateIndex + 1);
 
-      // Combine both datasets for use in the chart
       const combinedDates = [...firstPartDates, ...secondPartDates];
       const combinedPrices = [...firstPartPrices, ...secondPartPrices];
 
+      // CONFIGURE CHART DATA
       setChartDisplayData({
         labels: combinedDates,
         datasets: [
+          // Historical stock prices dataset
           {
             label: `${stockSymbol} Stock Price`,
             backgroundColor: dates.map((_: any, i: any) =>
-              // Check if the date contains "2025" (case sensitive)
               uniqueSecondPartDates.has(dates[i])
-                ? "rgba(255, 165, 0, 0.5)" // Orange for dates containing "2025"
+                ? "rgba(255, 165, 0, 0.5)"
                 : "rgba(59, 130, 246, 0.5)"
             ),
             borderColor: dates.map((_: any, i: any) =>
-              // Check if the date contains "2025" (case sensitive)
               uniqueSecondPartDates.has(dates[i])
-                ? "rgba(255, 165, 0, 0.9)" // Orange for dates containing "2025"
+                ? "rgba(255, 165, 0, 0.9)"
                 : "rgba(59, 130, 246, 0.9)"
             ),
             data: [
               ...firstPartPrices,
               ...Array(secondPartPrices.length).fill(null),
             ],
-            // data: combinedPrices,
-            // data: [...firstPartPrices, ...Array(secondPartPrices.length).fill(null)];
-            pointBackgroundColor: dates.map(
-              (_: any, i: any) =>
-                // Check if the date contains "2025" (case sensitive)
-                uniqueSecondPartDates.has(dates[i])
-                  ? "rgba(255, 165, 0, 1)" // Orange for dates containing "2025"
-                  : changes.find((point) => point.index === i)
-                  ? changes.find((point) => point.index === i)!.delta > 0
-                    ? "rgb(68, 246, 59)" // Green for positive significant change
-                    : "red" // Red for negative significant change
-                  : "rgba(75, 192, 192, 0.6)" // Default color for other points
+            pointBackgroundColor: dates.map((_: any, i: any) =>
+              uniqueSecondPartDates.has(dates[i])
+                ? "rgba(255, 165, 0, 1)"
+                : changes.find((point) => point.index === i)
+                ? changes.find((point) => point.index === i)!.delta > 0
+                  ? "rgb(68, 246, 59)" // Green for rise
+                  : "red" // Red for fall
+                : "rgba(75, 192, 192, 0.6)"
             ),
-            pointRadius: dates.map(
-              (_: any, i: any) =>
-                changes.find((point) => point.index === i)
-                  ? 5 // Show the point if it's significant or if the date contains "2025"
-                  : uniqueSecondPartDates.has(dates[i])
-                  ? 2
-                  : 0 // Hide the point if it's neither significant nor containing "2025"
+            pointRadius: dates.map((_: any, i: any) =>
+              changes.find((point) => point.index === i)
+                ? 5
+                : uniqueSecondPartDates.has(dates[i])
+                ? 2
+                : 0
             ),
-            pointHoverRadius: 10, // Increase hover size for better visibility
+            pointHoverRadius: 10,
           },
+          // Future predictions dataset
           {
             label: "Future Predictions",
-            // data: Array(dates.length).fill(null),  // Or adjust with prediction data
             data: [
               ...Array(firstPartPrices.length).fill(null),
               ...secondPartPrices,
             ],
-            backgroundColor: "rgba(255, 165, 0, 0.5)", // Orange for predictions
+            backgroundColor: "rgba(255, 165, 0, 0.5)",
             borderColor: "rgba(255, 165, 0, 0.9)",
-            pointBackgroundColor: "rgba(255, 165, 0, 1)", // Orange
+            pointBackgroundColor: "rgba(255, 165, 0, 1)",
             pointRadius: 0.1,
             pointHoverRadius: 10,
           },
+          // Legend entry for significant rise
           {
             label: "Significant Rise Coming",
-            data: Array(dates.length).fill(null), // Modify with your data representing a large rise
-            backgroundColor: "rgba(68, 246, 59, 0.5)", // Green for large rise
+            data: Array(dates.length).fill(null),
+            backgroundColor: "rgba(68, 246, 59, 0.5)",
             borderColor: "rgba(68, 246, 59, 0.9)",
-            pointBackgroundColor: "rgba(68, 246, 59, 1)", // Green
+            pointBackgroundColor: "rgba(68, 246, 59, 1)",
             pointRadius: 5,
             pointHoverRadius: 10,
           },
+          // Legend entry for significant fall
           {
             label: "Significant Fall Coming",
-            data: Array(dates.length).fill(null), // Modify with your data representing a large fall
-            backgroundColor: "rgba(255, 0, 0, 0.5)", // Red for large fall
+            data: Array(dates.length).fill(null),
+            backgroundColor: "rgba(255, 0, 0, 0.5)",
             borderColor: "rgba(255, 0, 0, 0.9)",
-            pointBackgroundColor: "rgba(255, 0, 0, 1)", // Red
+            pointBackgroundColor: "rgba(255, 0, 0, 1)",
             pointRadius: 5,
             pointHoverRadius: 10,
           },
         ],
       });
 
+      // CONFIGURE CHART OPTIONS (TOOLTIPS)
       const chartOptions = {
         plugins: {
           tooltip: {
@@ -248,17 +258,15 @@ export default function Home() {
     } catch (error) {
       console.error("Error fetching data:", error);
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   }
 
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
-
+  // LOAD ML MODEL GRAPH IMAGES
   useEffect(() => {
-    // Base URL of the Flask app
     const baseUrl = `${backendURL}/image`;
 
-    // List of image filenames (you can add or modify this list)
+    // List of ML model graph image filenames
     const imageFilenames = [
       "sentiment_accuracy.png",
       "sentiment_loss.png",
@@ -266,25 +274,26 @@ export default function Home() {
       "stock_predictions.png",
     ];
 
-    // Construct full URLs for each image
     const imageUrls = imageFilenames.map(
       (filename) => `${baseUrl}/${filename}`
     );
 
-    // Set the image URLs in state
     setImageUrls(imageUrls);
   }, []);
 
+  // RENDER UI
   return (
     <>
       <main
         className="flex min-h-screen flex-col items-center justify-between p-24"
         id="large-it"
       >
+        {/* HEADER SECTION - Logo, Title, Input, Submit Button */}
         <div
           className="flex flex-col items-center justify-center w-full max-w-md mx-auto"
           id="cont-it"
         >
+          {/* Logo and Title */}
           <div
             id="the-div"
             style={{ display: "flex", alignItems: "center", gap: "12px" }}
@@ -300,6 +309,7 @@ export default function Home() {
             <h4 id="title">StockSee</h4>
           </div>
 
+          {/* Stock Symbol Input */}
           <input
             type="text"
             value={stockSymbol}
@@ -307,11 +317,13 @@ export default function Home() {
             placeholder="Enter stock symbol"
             className="mb-4 p-2 border rounded"
           />
+
+          {/* Submit Button */}
           <button
             onClick={handleSubmit}
             id="submit-btn"
             className="p-2 bg-blue-500 text-white rounded flex items-center justify-center"
-            disabled={loading} // Disable button while loading
+            disabled={loading}
           >
             {loading ? (
               <>
@@ -327,6 +339,7 @@ export default function Home() {
             )}
           </button>
 
+          {/* Company Office Image */}
           {realImages ? (
             <Image
               src={realImages}
@@ -337,16 +350,16 @@ export default function Home() {
           ) : null}
         </div>
 
+        {/* MAIN CHART SECTION */}
         {chartDisplayData && (
           <>
-            {/* Line Chart */}
             <Line
               data={chartDisplayData}
               options={chartDisplayData.options}
               style={{ marginBottom: "75px" }}
             />
 
-            {/* Title for About Section */}
+            {/* ABOUT SECTION */}
             <h4
               id="title"
               style={{
@@ -464,7 +477,7 @@ export default function Home() {
               )}
             </div>
 
-            {/* Expandable Graphs Section */}
+            {/* ML MODEL GRAPHS SECTION (Expandable) */}
             <div
               style={{
                 marginBottom: "20px",
@@ -495,7 +508,7 @@ export default function Home() {
               </button>
               {showGraphs && (
                 <div style={{ marginTop: "15px" }}>
-                  {/* 2x2 Grid for Images */}
+                  {/* 2x2 Grid for ML Model Images */}
                   <div
                     style={{
                       display: "grid",
@@ -504,7 +517,7 @@ export default function Home() {
                       marginTop: "20px",
                     }}
                   >
-                    {/* Module 1 */}
+                    {/* Stock Predictions Graph */}
                     <div
                       style={{
                         textAlign: "center",
@@ -548,7 +561,7 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Module 2 */}
+                    {/* Stock Loss Graph */}
                     <div
                       style={{
                         textAlign: "center",
@@ -586,7 +599,7 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Module 3 */}
+                    {/* Sentiment Accuracy Graph */}
                     <div
                       style={{
                         textAlign: "center",
@@ -626,7 +639,7 @@ export default function Home() {
                       </p>
                     </div>
 
-                    {/* Module 4 */}
+                    {/* Sentiment Loss Graph */}
                     <div
                       style={{
                         textAlign: "center",
