@@ -20,7 +20,7 @@ export async function POST(req: Request) {
         }
         
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Tell me the reason (an event) why ${stockSymbol} stock price shifted on ${date} in the past. Give event, how it will impact future stock price, all on one continuous line.`;
+        const prompt = `Tell me the reason (a real world news event) why ${stockSymbol} stock price shifted on the following dates:${date}. For each date: give the event and how it impacted the stock price on that day, all on one continuous line. Thus each event (allocating to a certain date) should be on a seperate line.`;
 
         console.log('Sending prompt to Gemini API:', prompt);
         const result = await model.generateContent(prompt);
