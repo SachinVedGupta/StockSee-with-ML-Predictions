@@ -34,13 +34,15 @@ export default function Home() {
   // BACKEND CONFIGURATION
   const deployedBackendURL =
     "https://stocksee-with-ml-predictions.onrender.com";
-  const localBackendURL = "http://127.0.0.1:5000";
-  const backendURL = deployedBackendURL;
+  const backendURL =
+    process.env.NEXT_PUBLIC_STOCKSEE_BACKEND_URL || deployedBackendURL;
 
   // COMPONENT STATE
   const [stockSymbol, setStockSymbol] = useState("");
   const [chartDisplayData, setChartDisplayData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [newsWarning, setNewsWarning] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
   const [realImages, setRealImages] = useState(null);
@@ -56,6 +58,9 @@ export default function Home() {
   async function getImageUrl(prompt: string) {
     var apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
     var searchEngineId = process.env.NEXT_PUBLIC_SEARCH_ENGINE_ID;
+    if (!apiKey || !searchEngineId) {
+      return theimg.src;
+    }
     var query = prompt;
     var url =
       "https://www.googleapis.com/customsearch/v1?key=" +
@@ -65,16 +70,18 @@ export default function Home() {
       "&searchType=image&q=" +
       encodeURIComponent(query);
 
-    var response = await axios.get(url);
-    var results = response.data;
+    try {
+      var response = await axios.get(url);
+      var results = response.data;
 
-    if (results.items && results.items.length > 0) {
-      console.log(results.items[0].link);
-      return results.items[0].link;
-    } else {
-      console.log("logo");
-      return "https://cdn.discordapp.com/attachments/1208274732227764264/1208595162914103376/logo-no-background.png?ex=65e3daf5&is=65d165f5&hm=4d088d6dd1e4fb2cb3e9d75785f38efe79888a31a8d523724e00af838ff36143&";
+      if (results.items && results.items.length > 0) {
+        return results.items[0].link;
+      }
+    } catch (error) {
+      console.warn("Google Image Search unavailable; using local logo", error);
     }
+
+      return theimg.src;
   }
 
   // DATA FETCHING AND CHART GENERATION
@@ -84,13 +91,31 @@ export default function Home() {
    * Processes the data and generates chart configuration
    */
   async function handleSubmit() {
+    const ticker = stockSymbol.trim().toUpperCase();
+    setErrorMessage("");
+    setNewsWarning("");
+    if (!/^[A-Z0-9.^=-]{1,20}$/.test(ticker)) {
+      setErrorMessage("Enter a valid stock symbol, for example AAPL.");
+      return;
+    }
     setLoading(true);
+    setChartDisplayData(null);
+    setRealImages(null);
     try {
       // Fetch predicted prices from backend
       const chartResponse = await fetch(
-        `${backendURL}/predicted_prices?ticker=${stockSymbol}`
+        `${backendURL}/predicted_prices?ticker=${encodeURIComponent(ticker)}`,
+        { signal: AbortSignal.timeout(120000) }
       );
+      if (!chartResponse.ok) {
+        throw new Error(`Prediction service is unavailable (HTTP ${chartResponse.status}). Please try again shortly.`);
+      }
       const chartData = await chartResponse.json();
+      if (!Array.isArray(chartData) || !Array.isArray(chartData[0]) ||
+          !Array.isArray(chartData[1]) || chartData[0].length !== chartData[1].length ||
+          chartData[0].indexOf("Seperate-Dates") < 1) {
+        throw new Error("The prediction service returned invalid data. Please try again.");
+      }
 
       const dates = chartData[0];
       const prices = chartData[1];
@@ -104,7 +129,7 @@ export default function Home() {
 
       const changes: any[] = [];
       const date: any[] = [];
-      for (let i = windowSize; i < prices.length; i++) {
+      for (let i = windowSize; i < dates.indexOf("Seperate-Dates"); i++) {
         const pastPrice = prices[i - windowSize];
         const currentPrice = prices[i];
         const delta = (currentPrice - pastPrice) / pastPrice;
@@ -121,8 +146,7 @@ export default function Home() {
         }
       }
 
-      // Fetch news analysis for significant dates
-      const news = await axios.post("/api/gemini", { stockSymbol, date });
+      let newsItems: string[] = [];
 
       // Fetch company office image
       const realImages = getImageUrl(stockSymbol + " ticker company office");
@@ -155,7 +179,7 @@ export default function Home() {
         datasets: [
           // Historical stock prices dataset
           {
-            label: `${stockSymbol} Stock Price`,
+            label: `${ticker} Stock Price`,
             backgroundColor: dates.map((_: any, i: any) =>
               uniqueSecondPartDates.has(dates[i])
                 ? "rgba(255, 165, 0, 0.5)"
@@ -224,6 +248,17 @@ export default function Home() {
         ],
       });
 
+      // Render the chart before waiting for optional explanations.
+      if (date.length > 0) {
+        try {
+          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date }, { timeout: 20000 });
+          newsItems = Array.isArray(news.data?.news) ? news.data.news : [];
+          setNewsWarning(news.data?.warning || "");
+        } catch {
+          setNewsWarning("AI explanations are temporarily unavailable. Predictions are still available.");
+        }
+      }
+
       // CONFIGURE CHART OPTIONS (TOOLTIPS)
       const chartOptions = {
         plugins: {
@@ -235,9 +270,9 @@ export default function Home() {
                 );
                 if (point) {
                   let theanswer = "N/A";
-                  for (const thing in news.data.news) {
-                    if (news.data.news[thing].includes(point.x)) {
-                      theanswer = news.data.news[thing];
+                  for (const item of newsItems) {
+                    if (item.includes(point.x)) {
+                      theanswer = item;
                     }
                   }
                   return `Price: ${tooltipItem.raw.toFixed(
@@ -256,7 +291,9 @@ export default function Home() {
         options: chartOptions,
       }));
     } catch (error) {
-      console.error("Error fetching data:", error);
+      setErrorMessage(error instanceof Error && error.name === "TimeoutError"
+        ? "The prediction service took too long to respond. Please try again shortly."
+        : error instanceof Error ? error.message : "Could not load predictions. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -339,6 +376,9 @@ export default function Home() {
             )}
           </button>
 
+          {errorMessage && <p role="alert" className="mt-4 text-red-700">{errorMessage}</p>}
+          {newsWarning && <p role="status" className="mt-4">{newsWarning}</p>}
+
           {/* Company Office Image */}
           {realImages ? (
             <Image
@@ -353,7 +393,9 @@ export default function Home() {
         {/* MAIN CHART SECTION */}
         {chartDisplayData && (
           <>
+            <p className="my-4 text-sm">Educational estimates, not financial advice. AI explanations are unverified.</p>
             <Line
+              aria-label="Historical stock prices and future predictions"
               data={chartDisplayData}
               options={chartDisplayData.options}
               style={{ marginBottom: "75px" }}

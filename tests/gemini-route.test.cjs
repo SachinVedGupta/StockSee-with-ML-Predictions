@@ -1,0 +1,75 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const vm = require('node:vm');
+const ts = require('typescript');
+
+const source = ts.transpileModule(fs.readFileSync('src/app/api/gemini/route.ts', 'utf8'), {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 }
+}).outputText;
+
+function route({ key, result = '2024-08-05: Context', status, fail = false } = {}) {
+  let calls = 0;
+  const logs = [];
+  class FetchError extends Error { constructor() { super('private-provider-detail'); this.status = status; } }
+  const sandbox = {
+    exports: {}, process: { env: { GEMINI_API_KEY: key, GEMINI_MODEL: 'test-model' } },
+    console: { error: (...args) => logs.push(args) },
+    require(name) {
+      if (name === 'next/server') return { NextResponse: Response };
+      if (name === '@google/generative-ai') return {
+        GoogleGenerativeAIFetchError: FetchError,
+        GoogleGenerativeAI: class {
+          getGenerativeModel(config, options) {
+            assert.equal(config.model, 'test-model');
+            assert.equal(options.timeout, 15000);
+            return { generateContent: async () => {
+              calls++;
+              if (fail) throw new FetchError();
+              return { response: { text: () => result } };
+            } };
+          }
+        }
+      };
+      throw new Error(`Unexpected import ${name}`);
+    }
+  };
+  vm.runInNewContext(source, sandbox);
+  return { post: sandbox.exports.POST, calls: () => calls, logs };
+}
+const request = body => new Request('http://localhost/api/gemini', {
+  method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+});
+const valid = { stockSymbol: 'AAPL', date: ['2024-08-05'] };
+
+test('rejects malformed JSON and invalid inputs without contacting Google', async () => {
+  const r = route({ key: 'test' });
+  assert.equal((await r.post(new Request('http://localhost', { method: 'POST', body: '{' }))).status, 400);
+  for (const body of [null, {}, { ...valid, stockSymbol: '' }, { ...valid, date: ['2024-02-30'] }, { ...valid, date: Array(31).fill('2024-08-05') }]) {
+    assert.equal((await r.post(request(body))).status, 400);
+  }
+  assert.equal(r.calls(), 0);
+});
+test('empty dates skip Gemini', async () => {
+  const r = route({ key: 'test' });
+  assert.deepEqual(await (await r.post(request({ ...valid, date: [] }))).json(), { news: [] });
+  assert.equal(r.calls(), 0);
+});
+test('missing key degrades gracefully', async () => {
+  const response = await route().post(request(valid));
+  assert.equal(response.status, 200);
+  assert.equal((await response.json()).code, 'GEMINI_NOT_CONFIGURED');
+});
+test('returns parsed explanations', async () => {
+  const response = await route({ key: 'test', result: ' one\n\n two ' }).post(request(valid));
+  assert.deepEqual(await response.json(), { news: ['one', 'two'] });
+});
+for (const [status, expected] of [[429, 503], [403, 502], [undefined, 502]]) {
+  test(`provider failure ${status} is sanitized`, async () => {
+    const r = route({ key: 'test', status, fail: true });
+    const response = await r.post(request(valid));
+    assert.equal(response.status, expected);
+    assert.equal((await response.json()).code, 'GEMINI_UNAVAILABLE');
+    assert.ok(!JSON.stringify(r.logs).includes('private-provider-detail'));
+  });
+}

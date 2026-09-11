@@ -1,40 +1,49 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-import { NextResponse } from "next/server"
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+import { GoogleGenerativeAI, GoogleGenerativeAIFetchError } from "@google/generative-ai";
+import { NextResponse } from "next/server";
 
 export const maxDuration = 60;
 
-// get stock price shift explanations for a certain ticker on many dates
 export async function POST(req: Request) {
-    try {
-        const {stockSymbol, date} = await req.json()
-        console.log('Fetching news for:', stockSymbol, date);
-        
-        if (!process.env.GEMINI_API_KEY) {
-            console.error('GEMINI_API_KEY is not set in environment variables');
-            return NextResponse.json(
-                { error: 'GEMINI_API_KEY is not configured' },
-                { status: 500 }
-            )
-        }
-        
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        const prompt = `Tell me the reason (a real world news event) why ${stockSymbol} stock price shifted on the following dates:${date}. For each date: give the event and how it impacted the stock price on that day, all on one continuous line. Thus each event (allocating to a certain date) should be on a seperate line.`;
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON request" }, { status: 400 });
+  }
 
-        console.log('Sending prompt to Gemini API:', prompt);
-        const result = await model.generateContent(prompt);
-        const response = result.response.text();
-        const news = response.split('\n').filter(phrase => phrase.trim() !== '');
+  const stockSymbol = typeof body?.stockSymbol === "string"
+    ? body.stockSymbol.trim().toUpperCase() : "";
+  const dates = body?.date;
+  if (!/^[A-Z0-9.^=-]{1,20}$/.test(stockSymbol) || !Array.isArray(dates) ||
+      dates.length > 30 || dates.some((date: unknown) =>
+        typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+        !Number.isFinite(Date.parse(date)) || new Date(date).toISOString().slice(0, 10) !== date)) {
+    return NextResponse.json({ error: "Provide a ticker and up to 30 valid YYYY-MM-DD dates" }, { status: 400 });
+  }
+  if (dates.length === 0) return NextResponse.json({ news: [] });
 
-        console.log('News fetched successfully');
-        return NextResponse.json({ news })
-        
-    } catch (error) {
-        console.error('Error in Gemini API route:', error);
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : 'An error occurred' },
-            { status: 500 }
-        )
-    }
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) {
+    return NextResponse.json({ news: [], code: "GEMINI_NOT_CONFIGURED",
+      warning: "AI explanations are unavailable. Predictions are still available." });
+  }
+
+  const modelName = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash-lite";
+  try {
+    // Initialize per request so configuration failures stay inside error handling.
+    const model = new GoogleGenerativeAI(apiKey).getGenerativeModel(
+      { model: modelName }, { timeout: 15000 }
+    );
+    const prompt = `Provide brief historical context for ${stockSymbol} on these dates: ${Array.from(new Set(dates)).join(", ")}. Write one line per date starting with its YYYY-MM-DD date. Mention a news event only if you know it; otherwise say reliable context is unavailable. Do not invent events, imply a proven cause, or explain future prices as historical news. These are unverified AI explanations for educational use, not financial advice.`;
+    const result = await model.generateContent(prompt);
+    const news = result.response.text().split("\n").map(line => line.trim()).filter(Boolean);
+    return NextResponse.json({ news });
+  } catch (error) {
+    const upstreamStatus = error instanceof GoogleGenerativeAIFetchError ? error.status : undefined;
+    // SDK messages can contain request URLs and provider details. Never expose them.
+    console.error("Gemini explanation request failed", { model: modelName, upstreamStatus });
+    return NextResponse.json({ news: [], code: "GEMINI_UNAVAILABLE",
+      warning: "AI explanations are temporarily unavailable. Predictions are still available." },
+      { status: upstreamStatus === 429 ? 503 : 502 });
+  }
 }
