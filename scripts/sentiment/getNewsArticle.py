@@ -11,10 +11,19 @@ class NewsUnavailable(Exception):
 
 
 def get_articles(ticker, date=None, limit=3):
-    api_token = os.environ.get("NEWS_API_TOKEN", "").strip()
-    if not api_token:
+    tokens = list(dict.fromkeys(token for token in (
+        os.environ.get("NEWS_API_TOKEN", "").strip(),
+        os.environ.get("NEXT_NEWS_API_TOKEN", "").strip()) if token))
+    if not tokens:
         raise NewsUnavailable("News API token is not configured")
-    return _fetch_articles(api_token, ticker, date, limit, int(time() // 900))
+    failure = None
+    for token in tokens:
+        try:
+            return _fetch_articles(token, ticker, date, limit, int(time() // 900))
+        except NewsUnavailable as error:
+            failure = error
+    raise failure
+
 
 
 @lru_cache(maxsize=256)

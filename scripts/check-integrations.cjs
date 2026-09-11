@@ -42,10 +42,15 @@ async function main() {
       console.log(`Company logo: ${images ? 'PASS' : `FAILED (HTTP ${response.status})`}`);
     } catch { console.log('Company logo: FAILED (network or timeout)'); }
   } else { console.log('Company logo: NOT CONFIGURED'); }
-  const news = await check('Historical news', env.NEWS_API_TOKEN, () => {
-    const query = new URLSearchParams({ api_token: env.NEWS_API_TOKEN, search: 'AAPL', published_on: '2024-08-05', limit: '1' });
-    return fetch(`https://api.thenewsapi.com/v1/news/all?${query}`, { signal: AbortSignal.timeout(20000) });
-  }, data => Boolean(data.data?.length));
+  let news = false;
+  for (const [label, token] of [['Historical news (primary)', env.NEWS_API_TOKEN], ['Historical news (backup)', env.NEXT_NEWS_API_TOKEN]]) {
+    if (!token) continue;
+    news = await check(label, token, () => {
+      const query = new URLSearchParams({ api_token: token, search: 'AAPL', published_on: '2024-08-05', limit: '1' });
+      return fetch(`https://api.thenewsapi.com/v1/news/all?${query}`, { signal: AbortSignal.timeout(20000) });
+    }, data => Array.isArray(data.data));
+    if (news) break;
+  }
   process.exitCode = gemini && images && news ? 0 : 1;
 }
 main();

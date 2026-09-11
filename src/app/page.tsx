@@ -380,7 +380,6 @@ export default function Home() {
           </button>
 
           {errorMessage && <p role="alert" className="mt-4 text-red-700">{errorMessage}</p>}
-          {newsWarning && <p role="status" className="mt-4">{newsWarning}</p>}
 
           {submittedTicker && (
             <div className="mt-5">
@@ -430,12 +429,13 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold mt-7 mb-3">AI context for highlighted dates</h3>
               <p className="text-sm mb-3">AI-generated context; check the linked sources.</p>
+              {newsWarning && <p role="status" className="mb-3">{newsWarning}</p>}
               {explanations.length > 0 ? <ul className="space-y-3">
                 {explanations.map((explanation, index) => <li key={index} className="rounded-lg bg-white border border-gray-200 p-4">
                   <p>{explanation}</p>
                   {explanationSources.filter(source => explanation.includes(source.date)).map(source => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="block text-blue-700 underline text-sm mt-2">Source: {source.title}</a>)}
                 </li>)}
-              </ul> : <p>{newsWarning || "No AI context is available for this chart."}</p>}
+              </ul> : (!newsWarning && <p>{loading ? "Loading historical context…" : "No dated news sources were found for these chart highlights."}</p>)}
             </section>
 
             {/* ABOUT SECTION */}

@@ -57,6 +57,15 @@ class NewsTests(unittest.TestCase):
         get_articles('AAPL')
         self.assertEqual(get.call_count, 1)
 
+    @patch.dict(os.environ, {'NEWS_API_TOKEN': 'primary', 'NEXT_NEWS_API_TOKEN': 'backup'})
+    @patch('sentiment.getNewsArticle.requests.get')
+    def test_secondary_token_after_quota_failure(self, get):
+        success = Mock(ok=True)
+        success.json.return_value = {'data': [{'title':'Story', 'url':'https://example.com/story'}]}
+        get.side_effect = [Mock(ok=False, status_code=402), success]
+        self.assertEqual(len(get_articles('AAPL')), 1)
+        self.assertEqual([call.kwargs['params']['api_token'] for call in get.call_args_list], ['primary', 'backup'])
+
 
 if __name__ == '__main__':
     unittest.main()
