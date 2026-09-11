@@ -33,10 +33,15 @@ async function main() {
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body: JSON.stringify({ contents: [{ parts: [{ text: 'Reply with OK.' }] }] })
     }), data => Boolean(data.candidates?.some(c => c.content?.parts?.some(p => p.text))));
-  const images = await check('Google image search', env.NEXT_PUBLIC_GOOGLE_API_KEY && env.NEXT_PUBLIC_SEARCH_ENGINE_ID, () => {
-    const query = new URLSearchParams({ key: env.NEXT_PUBLIC_GOOGLE_API_KEY, cx: env.NEXT_PUBLIC_SEARCH_ENGINE_ID, searchType: 'image', q: 'Apple company office', num: '1' });
-    return fetch(`https://www.googleapis.com/customsearch/v1?${query}`, { signal: AbortSignal.timeout(20000) });
-  }, data => Boolean(data.items?.[0]?.link));
+  let images = false;
+  if (env.NEXT_PUBLIC_LOGO_DEV_TOKEN) {
+    try {
+      const query = new URLSearchParams({ token: env.NEXT_PUBLIC_LOGO_DEV_TOKEN, fallback: '404' });
+      const response = await fetch(`https://img.logo.dev/ticker/AAPL?${query}`, { signal: AbortSignal.timeout(20000) });
+      images = response.ok && Boolean(response.headers.get('content-type')?.startsWith('image/')) && (await response.arrayBuffer()).byteLength > 0;
+      console.log(`Company logo: ${images ? 'PASS' : `FAILED (HTTP ${response.status})`}`);
+    } catch { console.log('Company logo: FAILED (network or timeout)'); }
+  } else { console.log('Company logo: NOT CONFIGURED'); }
   const news = await check('Historical news', env.NEWS_API_TOKEN, () => {
     const query = new URLSearchParams({ api_token: env.NEWS_API_TOKEN, search: 'AAPL', published_on: '2024-08-05', limit: '1' });
     return fetch(`https://api.thenewsapi.com/v1/news/all?${query}`, { signal: AbortSignal.timeout(20000) });

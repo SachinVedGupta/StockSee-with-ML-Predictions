@@ -46,9 +46,9 @@ export default function Home() {
   const [showSummary, setShowSummary] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
   const [realImages, setRealImages] = useState<string | null>(null);
-  const [imageWarning, setImageWarning] = useState("");
+  const [submittedTicker, setSubmittedTicker] = useState("");
   const [storiesWarning, setStoriesWarning] = useState("");
-  const [stories, setStories] = useState<Array<{title: string; description: string; url: string; source: string; published_at: string}>>([]);
+  const [stories, setStories] = useState<Array<{title: string; description: string; url: string; source: string; published_at: string; image_url?: string}>>([]);
   const [explanations, setExplanations] = useState<string[]>([]);
   const [explanationSources, setExplanationSources] = useState<Array<{date: string; title: string; url: string}>>([]);
   const [sentimentStatus, setSentimentStatus] = useState("");
@@ -56,39 +56,11 @@ export default function Home() {
 
   // HELPER FUNCTIONS
 
-  /**
-   * Fetches company office image via Google Image Search API
-   * @param prompt - Search query for the image
-   * @returns URL of the first image result or a default logo
-   */
-  async function getImageUrl(prompt: string) {
-    var apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
-    var searchEngineId = process.env.NEXT_PUBLIC_SEARCH_ENGINE_ID;
-    if (!apiKey || !searchEngineId) {
-      setImageWarning("Company images need Google Search credentials.");
-      return null;
-    }
-    var query = prompt;
-    var url =
-      "https://www.googleapis.com/customsearch/v1?key=" +
-      apiKey +
-      "&cx=" +
-      searchEngineId +
-      "&searchType=image&q=" +
-      encodeURIComponent(query);
-
-    try {
-      var response = await axios.get(url, { timeout: 10000 });
-      var results = response.data;
-
-      if (results.items && results.items.length > 0) {
-        return results.items[0].link;
-      }
-    } catch (error) {
-      setImageWarning("Company image search is unavailable. Check the Google Search key, engine, and quota.");
-    }
-
-    return null;
+  function getLogoUrl(ticker: string) {
+    const token = process.env.NEXT_PUBLIC_LOGO_DEV_TOKEN;
+    if (!token) return null;
+    const query = new URLSearchParams({ token, size: "128", fallback: "404" });
+    return `https://img.logo.dev/ticker/${encodeURIComponent(ticker)}?${query}`;
   }
 
   // DATA FETCHING AND CHART GENERATION
@@ -101,7 +73,7 @@ export default function Home() {
     const ticker = stockSymbol.trim().toUpperCase();
     setErrorMessage("");
     setNewsWarning("");
-    setImageWarning("");
+
     setStoriesWarning("");
     setStories([]);
     setExplanations([]);
@@ -113,7 +85,8 @@ export default function Home() {
     }
     setLoading(true);
     setChartDisplayData(null);
-    setRealImages(null);
+    setSubmittedTicker(ticker);
+    setRealImages(getLogoUrl(ticker));
     try {
       // Fetch predicted prices from backend
       const chartResponse = await fetch(
@@ -170,9 +143,7 @@ export default function Home() {
       let newsItems: string[] = [];
 
       // Fetch independent enrichments together; each reports its own availability.
-      const enrichmentPromise = Promise.all([
-        getImageUrl(ticker + " company office"),
-        fetch(`${backendURL}/news?ticker=${encodeURIComponent(ticker)}`, { signal: AbortSignal.timeout(25000) })
+      const enrichmentPromise = fetch(`${backendURL}/news?ticker=${encodeURIComponent(ticker)}`, { signal: AbortSignal.timeout(25000) })
           .then(async response => {
             const result = await response.json();
             if (!response.ok) {
@@ -183,13 +154,9 @@ export default function Home() {
               typeof article.title === "string" && typeof article.url === "string" && article.url.startsWith("https://")) : [];
             setStories(articles);
             if (!articles.length) setStoriesWarning("No matching news stories were found.");
-            return articles.find((article: any) => typeof article.image_url === "string" && article.image_url.startsWith("https://"))?.image_url as string | undefined;
+
           })
-          .catch(() => setStoriesWarning("News stories could not be loaded from the backend.")),
-      ]).then(([officeImage, newsImage]) => {
-        setRealImages(officeImage || newsImage || null);
-        if (!officeImage && newsImage) setImageWarning("Showing an image from a news article; Google office-image search is unavailable.");
-      });
+          .catch(() => setStoriesWarning("News stories could not be loaded from the backend."));
 
       // SEPARATE HISTORICAL AND PREDICTED DATA
       const separateDateIndex = dates.indexOf("Seperate-Dates");
@@ -417,17 +384,20 @@ export default function Home() {
           {errorMessage && <p role="alert" className="mt-4 text-red-700">{errorMessage}</p>}
           {newsWarning && <p role="status" className="mt-4">{newsWarning}</p>}
 
-          {imageWarning && <p className="mt-3 text-sm">{imageWarning}</p>}
-          {/* Company Office Image */}
-          {realImages ? (
-            <Image
-              src={realImages}
-              alt="Company or news article image"
-              onError={() => { setRealImages(null); setImageWarning("The image provider returned an image that could not be loaded."); }}
-              width={500} // specify dimensions as per your needs
-              height={500}
-            />
-          ) : null}
+          {submittedTicker && (
+            <div className="mt-5 flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+              {realImages ? <Image
+                src={realImages}
+                alt={`${submittedTicker} company logo`}
+                onError={() => setRealImages(null)}
+                width={64}
+                height={64}
+                className="h-16 w-16 object-contain"
+              /> : <span aria-label="Company logo unavailable" className="flex h-16 w-16 items-center justify-center rounded bg-stone-100 text-xs font-bold">{submittedTicker}</span>}
+              <span className="font-semibold">{submittedTicker}</span>
+              <a href="https://logo.dev" target="_blank" rel="noopener" className="text-xs text-gray-600 underline">Logos by Logo.dev</a>
+            </div>
+          )}
         </div>
 
         {/* MAIN CHART SECTION */}
@@ -449,6 +419,14 @@ export default function Home() {
               <div className="grid gap-4">
                 {stories.map(story => (
                   <article key={story.url} className="rounded-lg border border-gray-200 bg-white p-5">
+                    {story.image_url?.startsWith("https://") && <Image
+                      src={story.image_url}
+                      alt=""
+                      width={96}
+                      height={64}
+                      className="mb-3 h-16 w-24 rounded object-contain"
+                      onError={event => { event.currentTarget.style.display = "none"; }}
+                    />}
                     <a href={story.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-semibold underline">{story.title}</a>
                     <p className="text-sm text-gray-600 mt-1">{story.source} · {story.published_at.slice(0, 10)}</p>
                     <p className="mt-2">{story.description}</p>
