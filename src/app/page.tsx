@@ -50,7 +50,7 @@ export default function Home() {
   const [storiesWarning, setStoriesWarning] = useState("");
   const [stories, setStories] = useState<Array<{title: string; description: string; url: string; source: string; published_at: string; image_url?: string}>>([]);
   const [explanations, setExplanations] = useState<string[]>([]);
-  const [explanationSources, setExplanationSources] = useState<Array<{date: string; title: string; url: string}>>([]);
+  const [explanationSources, setExplanationSources] = useState<Array<{date: string; title: string; url: string; publishedDate?: string}>>([]);
   const [sentimentStatus, setSentimentStatus] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
@@ -129,12 +129,12 @@ export default function Home() {
 
         if (Math.abs(delta) > threshold) {
           changes.push({
-            index: i - windowSize,
-            x: dates[i - windowSize],
-            y: pastPrice,
+            index: i,
+            x: dates[i],
+            y: currentPrice,
             delta: delta,
           });
-          date.push(dates[i - windowSize]);
+          date.push(dates[i]);
           i = i + minDistance;
         }
       }
@@ -253,7 +253,7 @@ export default function Home() {
       // Render the chart before waiting for optional explanations.
       if (date.length > 0) {
         try {
-          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date }, { timeout: 50000 });
+          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date, movements: changes.map(change => ({ date: change.x, changePercent: change.delta * 100 })) }, { timeout: 50000 });
           newsItems = Array.isArray(news.data?.news) ? news.data.news : [];
           setExplanations(newsItems);
           setExplanationSources(Array.isArray(news.data?.sources) ? news.data.sources.filter((source: any) => typeof source.url === "string" && source.url.startsWith("https://")) : []);
@@ -428,12 +428,12 @@ export default function Home() {
                 ))}
               </div>
               <h3 className="text-xl font-semibold mt-7 mb-3">AI context for highlighted dates</h3>
-              <p className="text-sm mb-3">AI-generated context; check the linked sources.</p>
+              <p className="text-sm mb-3">AI context considers news from the preceding two weeks; possible connections are not proven causes.</p>
               {newsWarning && <p role="status" className="mb-3">{newsWarning}</p>}
               {explanations.length > 0 ? <ul className="space-y-3">
                 {explanations.map((explanation, index) => <li key={index} className="rounded-lg bg-white border border-gray-200 p-4">
                   <p>{explanation}</p>
-                  {explanationSources.filter(source => explanation.includes(source.date)).map(source => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="block text-blue-700 underline text-sm mt-2">Source: {source.title}</a>)}
+                  {explanationSources.filter(source => explanation.includes(source.date)).map(source => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="block text-blue-700 underline text-sm mt-2">Source{source.publishedDate ? ` (${source.publishedDate})` : ""}: {source.title}</a>)}
                 </li>)}
               </ul> : (!newsWarning && <p>{loading ? "Loading historical context…" : "No dated news sources were found for these chart highlights."}</p>)}
             </section>

@@ -78,14 +78,14 @@ for (const [status, expected] of [[429, 503], [403, 502], [undefined, 502]]) {
   });
 }
 
- test('only cites articles with matching dates and HTTPS links', async () => {
+ test('only cites articles in the lead-up window with HTTPS links', async () => {
   const r = route({key: 'test', newsKey: 'news-test', articles: [
     {title: 'Wrong date', url: 'https://example.com/wrong', published_at: '2025-08-05'},
     {title: 'Unsafe', url: 'javascript:alert(1)', published_at: '2024-08-05'},
     {title: 'Matching source', url: 'https://example.com/story', published_at: '2024-08-05T12:00:00Z', description: 'Historical context'}
   ]});
   const result = await (await r.post(request(valid))).json();
-  assert.deepEqual(result.sources, [{date:'2024-08-05',title:'Matching source',url:'https://example.com/story',description:'Historical context'}]);
+  assert.deepEqual(result.sources, [{date:'2024-08-05',title:'Matching source',url:'https://example.com/story',description:'Historical context',publishedDate:'2024-08-05'}]);
 });
 
 test('missing dated sources skip Gemini instead of generating placeholders', async () => {
@@ -109,4 +109,15 @@ test('secondary token restores sources without a quota warning', async () => {
   assert.equal(r.calls(), 1);
   assert.equal(body.warning, undefined);
   assert.equal(body.sources.length, 1);
+});
+test('accepts earlier events, excludes future or stale reports, and keeps highlight date', async () => {
+  const r = route({key:'test', articles:[
+    {...sourceArticle, published_at:'2024-08-01T12:00:00Z'},
+    {...sourceArticle, published_at:'2024-08-06T00:00:00Z'},
+    {...sourceArticle, published_at:'2024-07-21T23:59:59Z'}
+  ]});
+  const body = await (await r.post(request(valid))).json();
+  assert.equal(body.sources.length, 1);
+  assert.equal(body.sources[0].date, '2024-08-05');
+  assert.equal(body.sources[0].publishedDate, '2024-08-01');
 });
