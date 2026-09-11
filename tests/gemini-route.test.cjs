@@ -14,10 +14,11 @@ function route({ key, result = '2024-08-05: Context', status, fail = false, news
   let calls = 0;
   let fetches = 0;
   const logs = [];
+  const queries = [];
   class FetchError extends Error { constructor() { super('private-provider-detail'); this.status = status; } }
   const sandbox = {
     exports: {}, process: { env: { GEMINI_API_KEY: key, GEMINI_MODEL: 'test-model', NEWS_API_TOKEN: newsKey, NEXT_NEWS_API_TOKEN: backupKey } },
-    URLSearchParams, AbortSignal, fetch: async () => { fetches++; return Response.json({ data: articles }, {status: Array.isArray(newsStatus) ? newsStatus[fetches - 1] : newsStatus}); },
+    URL, URLSearchParams, AbortSignal, fetch: async url => { queries.push(new URL(url).searchParams.get("search")); fetches++; return Response.json({ data: articles }, {status: Array.isArray(newsStatus) ? newsStatus[fetches - 1] : newsStatus}); },
     console: { error: (...args) => logs.push(args) },
     require(name) {
       if (name === 'next/server') return { NextResponse: Response };
@@ -39,7 +40,7 @@ function route({ key, result = '2024-08-05: Context', status, fail = false, news
     }
   };
   vm.runInNewContext(source, sandbox);
-  return { post: sandbox.exports.POST, calls: () => calls, fetches: () => fetches, logs };
+  return { post: sandbox.exports.POST, calls: () => calls, fetches: () => fetches, queries, logs };
 }
 const request = body => new Request('http://localhost/api/gemini', {
   method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
@@ -120,4 +121,13 @@ test('accepts earlier events, excludes future or stale reports, and keeps highli
   assert.equal(body.sources.length, 1);
   assert.equal(body.sources[0].date, '2024-08-05');
   assert.equal(body.sources[0].publishedDate, '2024-08-01');
+});
+test('event-focused search requires the ticker or known company name in every alternative', async () => {
+  const r = route({key:'test'});
+  await r.post(request(valid));
+  assert.ok(r.queries[0].startsWith('("AAPL" | "Apple") + ('));
+  assert.ok(r.queries[0].endsWith(')'));
+  assert.ok(r.queries[0].includes('launch*'));
+  assert.ok(r.queries[0].includes('CEO'));
+  assert.ok(r.queries[0].includes('earnings'));
 });
