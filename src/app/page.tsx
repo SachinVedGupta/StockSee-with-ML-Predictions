@@ -45,7 +45,13 @@ export default function Home() {
   const [newsWarning, setNewsWarning] = useState("");
   const [showSummary, setShowSummary] = useState(false);
   const [showGraphs, setShowGraphs] = useState(false);
-  const [realImages, setRealImages] = useState(null);
+  const [realImages, setRealImages] = useState<string | null>(null);
+  const [imageWarning, setImageWarning] = useState("");
+  const [storiesWarning, setStoriesWarning] = useState("");
+  const [stories, setStories] = useState<Array<{title: string; description: string; url: string; source: string; published_at: string}>>([]);
+  const [explanations, setExplanations] = useState<string[]>([]);
+  const [explanationSources, setExplanationSources] = useState<Array<{date: string; title: string; url: string}>>([]);
+  const [sentimentStatus, setSentimentStatus] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   // HELPER FUNCTIONS
@@ -59,7 +65,8 @@ export default function Home() {
     var apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_KEY;
     var searchEngineId = process.env.NEXT_PUBLIC_SEARCH_ENGINE_ID;
     if (!apiKey || !searchEngineId) {
-      return theimg.src;
+      setImageWarning("Company images need Google Search credentials.");
+      return null;
     }
     var query = prompt;
     var url =
@@ -71,17 +78,17 @@ export default function Home() {
       encodeURIComponent(query);
 
     try {
-      var response = await axios.get(url);
+      var response = await axios.get(url, { timeout: 10000 });
       var results = response.data;
 
       if (results.items && results.items.length > 0) {
         return results.items[0].link;
       }
     } catch (error) {
-      console.warn("Google Image Search unavailable; using local logo", error);
+      setImageWarning("Company image search is unavailable. Check the Google Search key, engine, and quota.");
     }
 
-      return theimg.src;
+    return null;
   }
 
   // DATA FETCHING AND CHART GENERATION
@@ -94,6 +101,12 @@ export default function Home() {
     const ticker = stockSymbol.trim().toUpperCase();
     setErrorMessage("");
     setNewsWarning("");
+    setImageWarning("");
+    setStoriesWarning("");
+    setStories([]);
+    setExplanations([]);
+    setExplanationSources([]);
+    setSentimentStatus("");
     if (!/^[A-Z0-9.^=-]{1,20}$/.test(ticker)) {
       setErrorMessage("Enter a valid stock symbol, for example AAPL.");
       return;
@@ -117,6 +130,14 @@ export default function Home() {
         throw new Error("The prediction service returned invalid data. Please try again.");
       }
 
+      const sentiment = chartData[2]?.sentiment;
+      if (sentiment) {
+        setSentimentStatus(sentiment.news_samples > 0
+          ? `News sentiment: ${sentiment.news_samples} historical samples scored by the sentiment model; ${sentiment.neutral_samples} samples used neutral values. Samples are taken every ${sentiment.sampling_interval} observations.`
+          : `News sentiment was not used: ${sentiment.warning || "no matching historical articles were found"}. The price model used neutral sentiment.`);
+      } else {
+        setSentimentStatus("This backend does not report whether news sentiment was used.");
+      }
       const dates = chartData[0];
       const prices = chartData[1];
 
@@ -148,10 +169,26 @@ export default function Home() {
 
       let newsItems: string[] = [];
 
-      // Fetch company office image
-      const realImages = getImageUrl(stockSymbol + " ticker company office");
-      realImages.then((url) => {
-        setRealImages(url);
+      // Fetch independent enrichments together; each reports its own availability.
+      const enrichmentPromise = Promise.all([
+        getImageUrl(ticker + " company office"),
+        fetch(`${backendURL}/news?ticker=${encodeURIComponent(ticker)}`, { signal: AbortSignal.timeout(25000) })
+          .then(async response => {
+            const result = await response.json();
+            if (!response.ok) {
+              setStoriesWarning(result.warning || "News stories are unavailable.");
+              return;
+            }
+            const articles = Array.isArray(result.articles) ? result.articles.filter((article: any) =>
+              typeof article.title === "string" && typeof article.url === "string" && article.url.startsWith("https://")) : [];
+            setStories(articles);
+            if (!articles.length) setStoriesWarning("No matching news stories were found.");
+            return articles.find((article: any) => typeof article.image_url === "string" && article.image_url.startsWith("https://"))?.image_url as string | undefined;
+          })
+          .catch(() => setStoriesWarning("News stories could not be loaded from the backend.")),
+      ]).then(([officeImage, newsImage]) => {
+        setRealImages(officeImage || newsImage || null);
+        if (!officeImage && newsImage) setImageWarning("Showing an image from a news article; Google office-image search is unavailable.");
       });
 
       // SEPARATE HISTORICAL AND PREDICTED DATA
@@ -251,8 +288,10 @@ export default function Home() {
       // Render the chart before waiting for optional explanations.
       if (date.length > 0) {
         try {
-          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date }, { timeout: 20000 });
+          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date }, { timeout: 40000 });
           newsItems = Array.isArray(news.data?.news) ? news.data.news : [];
+          setExplanations(newsItems);
+          setExplanationSources(Array.isArray(news.data?.sources) ? news.data.sources.filter((source: any) => typeof source.url === "string" && source.url.startsWith("https://")) : []);
           setNewsWarning(news.data?.warning || "");
         } catch {
           setNewsWarning("AI explanations are temporarily unavailable. Predictions are still available.");
@@ -275,9 +314,7 @@ export default function Home() {
                       theanswer = item;
                     }
                   }
-                  return `Price: ${tooltipItem.raw.toFixed(
-                    2
-                  )},  News: ${theanswer}`;
+                  return [`Price: ${tooltipItem.raw.toFixed(2)}`, ...(theanswer.match(/.{1,90}(?:\s|$)/g) || [theanswer])];
                 }
                 return `Price: ${tooltipItem.raw.toFixed(2)}`;
               },
@@ -290,6 +327,7 @@ export default function Home() {
         ...prevState,
         options: chartOptions,
       }));
+      await enrichmentPromise;
     } catch (error) {
       setErrorMessage(error instanceof Error && error.name === "TimeoutError"
         ? "The prediction service took too long to respond. Please try again shortly."
@@ -379,11 +417,13 @@ export default function Home() {
           {errorMessage && <p role="alert" className="mt-4 text-red-700">{errorMessage}</p>}
           {newsWarning && <p role="status" className="mt-4">{newsWarning}</p>}
 
+          {imageWarning && <p className="mt-3 text-sm">{imageWarning}</p>}
           {/* Company Office Image */}
           {realImages ? (
             <Image
               src={realImages}
-              alt="Dynamic Image"
+              alt="Company or news article image"
+              onError={() => { setRealImages(null); setImageWarning("The image provider returned an image that could not be loaded."); }}
               width={500} // specify dimensions as per your needs
               height={500}
             />
@@ -400,6 +440,30 @@ export default function Home() {
               options={chartDisplayData.options}
               style={{ marginBottom: "75px" }}
             />
+
+            <section className="w-full max-w-4xl mb-10" aria-label="News and AI context">
+              <h2 className="text-2xl font-bold mb-3">News and AI context</h2>
+              <p className="text-sm mb-5">{sentimentStatus}</p>
+              <h3 className="text-xl font-semibold mb-3">Recent news stories</h3>
+              {storiesWarning && <p role="status" className="mb-4">{storiesWarning}</p>}
+              <div className="grid gap-4">
+                {stories.map(story => (
+                  <article key={story.url} className="rounded-lg border border-gray-200 bg-white p-5">
+                    <a href={story.url} target="_blank" rel="noopener noreferrer" className="text-blue-700 font-semibold underline">{story.title}</a>
+                    <p className="text-sm text-gray-600 mt-1">{story.source} · {story.published_at.slice(0, 10)}</p>
+                    <p className="mt-2">{story.description}</p>
+                  </article>
+                ))}
+              </div>
+              <h3 className="text-xl font-semibold mt-7 mb-3">AI context for highlighted dates</h3>
+              <p className="text-sm mb-3">AI context uses dated articles when available. Source links are shown below; the interpretation may be inaccurate.</p>
+              {explanations.length > 0 ? <ul className="space-y-3">
+                {explanations.map((explanation, index) => <li key={index} className="rounded-lg bg-white border border-gray-200 p-4">
+                  <p>{explanation}</p>
+                  {explanationSources.filter(source => explanation.includes(source.date)).map(source => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="block text-blue-700 underline text-sm mt-2">Source: {source.title}</a>)}
+                </li>)}
+              </ul> : <p>{newsWarning || "No AI context is available for this chart."}</p>}
+            </section>
 
             {/* ABOUT SECTION */}
             <h4

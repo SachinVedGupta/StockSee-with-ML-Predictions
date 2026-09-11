@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "backend": "node scripts/start-backend.cjs",
+    "check:integrations": "node scripts/check-integrations.cjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.16.0",

@@ -8,12 +8,13 @@ const source = ts.transpileModule(fs.readFileSync('src/app/api/gemini/route.ts',
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 }
 }).outputText;
 
-function route({ key, result = '2024-08-05: Context', status, fail = false } = {}) {
+function route({ key, result = '2024-08-05: Context', status, fail = false, newsKey, articles = [] } = {}) {
   let calls = 0;
   const logs = [];
   class FetchError extends Error { constructor() { super('private-provider-detail'); this.status = status; } }
   const sandbox = {
-    exports: {}, process: { env: { GEMINI_API_KEY: key, GEMINI_MODEL: 'test-model' } },
+    exports: {}, process: { env: { GEMINI_API_KEY: key, GEMINI_MODEL: 'test-model', NEWS_API_TOKEN: newsKey } },
+    URLSearchParams, AbortSignal, fetch: async () => Response.json({ data: articles }),
     console: { error: (...args) => logs.push(args) },
     require(name) {
       if (name === 'next/server') return { NextResponse: Response };
@@ -62,7 +63,7 @@ test('missing key degrades gracefully', async () => {
 });
 test('returns parsed explanations', async () => {
   const response = await route({ key: 'test', result: ' one\n\n two ' }).post(request(valid));
-  assert.deepEqual(await response.json(), { news: ['one', 'two'] });
+  assert.deepEqual(await response.json(), { news: ['one', 'two'], sources: [] });
 });
 for (const [status, expected] of [[429, 503], [403, 502], [undefined, 502]]) {
   test(`provider failure ${status} is sanitized`, async () => {
@@ -73,3 +74,13 @@ for (const [status, expected] of [[429, 503], [403, 502], [undefined, 502]]) {
     assert.ok(!JSON.stringify(r.logs).includes('private-provider-detail'));
   });
 }
+
+ test('only cites articles with matching dates and HTTPS links', async () => {
+  const r = route({key: 'test', newsKey: 'news-test', articles: [
+    {title: 'Wrong date', url: 'https://example.com/wrong', published_at: '2025-08-05'},
+    {title: 'Unsafe', url: 'javascript:alert(1)', published_at: '2024-08-05'},
+    {title: 'Matching source', url: 'https://example.com/story', published_at: '2024-08-05T12:00:00Z', description: 'Historical context'}
+  ]});
+  const result = await (await r.post(request(valid))).json();
+  assert.deepEqual(result.sources, [{date:'2024-08-05',title:'Matching source',url:'https://example.com/story',description:'Historical context'}]);
+});

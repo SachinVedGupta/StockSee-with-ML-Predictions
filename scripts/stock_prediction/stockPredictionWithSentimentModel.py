@@ -198,5 +198,14 @@ def predict_stock_price(ticker_symbol):
         'predictions': predictions[0].tolist(),
         'prediction_dates': action_dates,
         'historical_dates': historical_dates,
-        'historical_prices': historical_prices
+        'historical_prices': historical_prices,
+        'metadata': {
+            'inference': {
+                'model': 'DOW_Trained_stock_tf_model.keras',
+                'input_shape': list(P[-1:].shape),
+                'output_count': len(predictions[0]),
+                'price_alignment': 'First model estimate shifted to the last observed closing price',
+            },
+            'sentiment': stock_data.attrs.get('sentiment', {}),
+        }
     }

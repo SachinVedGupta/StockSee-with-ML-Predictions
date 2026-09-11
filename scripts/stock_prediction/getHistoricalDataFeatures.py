@@ -2,7 +2,7 @@ import yfinance as yf
 import pandas as pd
 from datetime import datetime, timedelta
 
-from sentiment.getNewsArticle import get_article # pass in like ("AMD", "2024-12-24")
+from sentiment.getNewsArticle import get_article, NewsUnavailable # pass in like ("AMD", "2024-12-24")
 from sentiment.sentimentAnalysisModel import sentiment_from_sentence # pass in like ("sentence_string")
 
 
@@ -16,6 +16,8 @@ def get_stock_features(ticker):
         start_date = end_date - timedelta(days=1800)
 
         historical_data = stock.history(start=start_date, end=end_date)
+        if historical_data.empty:
+            raise ValueError("No market data was returned for this ticker")
         historical_data.reset_index(inplace=True)
 
         # preparing and verifying the features
@@ -33,8 +35,7 @@ def get_stock_features(ticker):
         return historical_data
 
     except Exception as e:
-        print(f"Error fetching data for {ticker}: {e}")
-        return None
+        raise ValueError("Market data is unavailable; verify the ticker or retry later") from e
 
 
 # feature engineering to produce the overall stock prediction features dataframe (with both stock data and sentiment scores)
@@ -42,22 +43,39 @@ def get_stock_features_with_sentiment(ticker):
 
   stock_data = get_stock_features(ticker)
 
+  if len(stock_data) < 251:
+    raise ValueError("At least 251 trading observations are required for this model")
   sentiment_values = []
+  news_samples = 0
+  neutral_samples = 0
+  unavailable_reason = None
   last_sentiment = 0.5  # default neutral sentiment
 
   # generate sentiment for every 150th day and fill in between
   for day in range(len(stock_data['Date'])):
     if day % 150 == 0:  # fetch new sentiment every 150 days
       string_date = stock_data['Date'][day].strftime("%Y-%m-%d")
-      article_string = get_article(ticker, string_date)
-      
+      # Stop retrying a failed provider during this request (e.g. quota/auth errors).
+      try:
+        article_string = "N/A" if unavailable_reason else get_article(ticker, string_date)
+      except NewsUnavailable as error:
+        unavailable_reason = str(error)
+        article_string = "N/A"
       if article_string == "N/A":
-        last_sentiment = float(0.5000)
+        neutral_samples += 1
+        last_sentiment = 0.5
       else:
         sentiment_score = sentiment_from_sentence(article_string)
         last_sentiment = round(float(sentiment_score), 4)
+        news_samples += 1
     
     sentiment_values.append(last_sentiment)
 
   stock_data['Sentiment'] = sentiment_values
+  stock_data.attrs['sentiment'] = {
+    'news_samples': news_samples,
+    'neutral_samples': neutral_samples,
+    'sampling_interval': 150,
+    'warning': unavailable_reason,
+  }
   return stock_data
