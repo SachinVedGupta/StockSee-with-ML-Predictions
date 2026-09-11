@@ -28,7 +28,7 @@ export async function POST(req: Request) {
       warning: "AI explanations are unavailable. Predictions are still available." });
   }
 
-  const modelName = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash-lite";
+  const modelName = process.env.GEMINI_MODEL?.trim() || "gemini-3.5-flash-lite";
   try {
     // Initialize per request so configuration failures stay inside error handling.
     const model = new GoogleGenerativeAI(apiKey).getGenerativeModel(
