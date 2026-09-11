@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   try {
     // Initialize per request so configuration failures stay inside error handling.
     const model = new GoogleGenerativeAI(apiKey).getGenerativeModel(
-      { model: modelName }, { timeout: 15000 }
+      { model: modelName }, { timeout: 30000 }
     );
     const sources: Array<{ date: string; title: string; url: string; description: string }> = [];
     const newsKey = process.env.NEWS_API_TOKEN?.trim();

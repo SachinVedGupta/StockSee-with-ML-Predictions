@@ -73,7 +73,6 @@ export default function Home() {
     const ticker = stockSymbol.trim().toUpperCase();
     setErrorMessage("");
     setNewsWarning("");
-
     setStoriesWarning("");
     setStories([]);
     setExplanations([]);
@@ -106,10 +105,10 @@ export default function Home() {
       const sentiment = chartData[2]?.sentiment;
       if (sentiment) {
         setSentimentStatus(sentiment.news_samples > 0
-          ? `News sentiment: ${sentiment.news_samples} historical samples scored by the sentiment model; ${sentiment.neutral_samples} samples used neutral values. Samples are taken every ${sentiment.sampling_interval} observations.`
-          : `News sentiment was not used: ${sentiment.warning || "no matching historical articles were found"}. The price model used neutral sentiment.`);
+          ? "Historical news sentiment included."
+          : "News sentiment unavailable; predictions use neutral sentiment.");
       } else {
-        setSentimentStatus("This backend does not report whether news sentiment was used.");
+        setSentimentStatus("News sentiment status unavailable.");
       }
       const dates = chartData[0];
       const prices = chartData[1];
@@ -154,7 +153,6 @@ export default function Home() {
               typeof article.title === "string" && typeof article.url === "string" && article.url.startsWith("https://")) : [];
             setStories(articles);
             if (!articles.length) setStoriesWarning("No matching news stories were found.");
-
           })
           .catch(() => setStoriesWarning("News stories could not be loaded from the backend."));
 
@@ -255,7 +253,7 @@ export default function Home() {
       // Render the chart before waiting for optional explanations.
       if (date.length > 0) {
         try {
-          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date }, { timeout: 40000 });
+          const news = await axios.post("/api/gemini", { stockSymbol: ticker, date }, { timeout: 50000 });
           newsItems = Array.isArray(news.data?.news) ? news.data.news : [];
           setExplanations(newsItems);
           setExplanationSources(Array.isArray(news.data?.sources) ? news.data.sources.filter((source: any) => typeof source.url === "string" && source.url.startsWith("https://")) : []);
@@ -385,17 +383,15 @@ export default function Home() {
           {newsWarning && <p role="status" className="mt-4">{newsWarning}</p>}
 
           {submittedTicker && (
-            <div className="mt-5 flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3">
+            <div className="mt-5">
               {realImages ? <Image
                 src={realImages}
                 alt={`${submittedTicker} company logo`}
                 onError={() => setRealImages(null)}
-                width={64}
-                height={64}
-                className="h-16 w-16 object-contain"
+                width={128}
+                height={128}
+                className="h-32 w-32 object-contain"
               /> : <span aria-label="Company logo unavailable" className="flex h-16 w-16 items-center justify-center rounded bg-stone-100 text-xs font-bold">{submittedTicker}</span>}
-              <span className="font-semibold">{submittedTicker}</span>
-              <a href="https://logo.dev" target="_blank" rel="noopener" className="text-xs text-gray-600 underline">Logos by Logo.dev</a>
             </div>
           )}
         </div>
@@ -403,7 +399,7 @@ export default function Home() {
         {/* MAIN CHART SECTION */}
         {chartDisplayData && (
           <>
-            <p className="my-4 text-sm">Educational estimates, not financial advice. AI explanations are unverified.</p>
+            <p className="my-4 text-sm">Educational estimates, not financial advice.</p>
             <Line
               aria-label="Historical stock prices and future predictions"
               data={chartDisplayData}
@@ -412,7 +408,6 @@ export default function Home() {
             />
 
             <section className="w-full max-w-4xl mb-10" aria-label="News and AI context">
-              <h2 className="text-2xl font-bold mb-3">News and AI context</h2>
               <p className="text-sm mb-5">{sentimentStatus}</p>
               <h3 className="text-xl font-semibold mb-3">Recent news stories</h3>
               {storiesWarning && <p role="status" className="mb-4">{storiesWarning}</p>}
@@ -434,7 +429,7 @@ export default function Home() {
                 ))}
               </div>
               <h3 className="text-xl font-semibold mt-7 mb-3">AI context for highlighted dates</h3>
-              <p className="text-sm mb-3">AI context uses dated articles when available. Source links are shown below; the interpretation may be inaccurate.</p>
+              <p className="text-sm mb-3">AI-generated context; check the linked sources.</p>
               {explanations.length > 0 ? <ul className="space-y-3">
                 {explanations.map((explanation, index) => <li key={index} className="rounded-lg bg-white border border-gray-200 p-4">
                   <p>{explanation}</p>

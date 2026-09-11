@@ -23,7 +23,7 @@ function route({ key, result = '2024-08-05: Context', status, fail = false, news
         GoogleGenerativeAI: class {
           getGenerativeModel(config, options) {
             assert.equal(config.model, 'test-model');
-            assert.equal(options.timeout, 15000);
+            assert.equal(options.timeout, 30000);
             return { generateContent: async () => {
               calls++;
               if (fail) throw new FetchError();
