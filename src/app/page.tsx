@@ -273,13 +273,13 @@ export default function Home() {
                   (p: any) => p.index === tooltipItem.dataIndex
                 );
                 if (point) {
-                  let theanswer = "N/A";
+                  let theanswer = "";
                   for (const item of newsItems) {
                     if (item.includes(point.x)) {
                       theanswer = item;
                     }
                   }
-                  return [`Price: ${tooltipItem.raw.toFixed(2)}`, ...(theanswer.match(/.{1,90}(?:\s|$)/g) || [theanswer])];
+                  return [`Price: ${tooltipItem.raw.toFixed(2)}`, ...(theanswer ? (theanswer.match(/.{1,90}(?:\s|$)/g) || [theanswer]) : [])];
                 }
                 return `Price: ${tooltipItem.raw.toFixed(2)}`;
               },

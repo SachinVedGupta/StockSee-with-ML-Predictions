@@ -8,7 +8,7 @@ const source = ts.transpileModule(fs.readFileSync('src/app/api/gemini/route.ts',
   compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 }
 }).outputText;
 
-const sourceArticle = {title: 'Reported event', url: 'https://example.com/story', published_at: '2024-08-05T12:00:00Z'};
+const sourceArticle = {title: 'AAPL reported event', url: 'https://example.com/story', published_at: '2024-08-05T12:00:00Z'};
 
 function route({ key, result = '2024-08-05: Context', status, fail = false, newsKey = "news-test", articles = [sourceArticle], newsStatus = 200, backupKey } = {}) {
   let calls = 0;
@@ -83,10 +83,10 @@ for (const [status, expected] of [[429, 503], [403, 502], [undefined, 502]]) {
   const r = route({key: 'test', newsKey: 'news-test', articles: [
     {title: 'Wrong date', url: 'https://example.com/wrong', published_at: '2025-08-05'},
     {title: 'Unsafe', url: 'javascript:alert(1)', published_at: '2024-08-05'},
-    {title: 'Matching source', url: 'https://example.com/story', published_at: '2024-08-05T12:00:00Z', description: 'Historical context'}
+    {title: 'AAPL matching source', url: 'https://example.com/story', published_at: '2024-08-05T12:00:00Z', description: 'Historical context'}
   ]});
   const result = await (await r.post(request(valid))).json();
-  assert.deepEqual(result.sources, [{date:'2024-08-05',title:'Matching source',url:'https://example.com/story',description:'Historical context',publishedDate:'2024-08-05'}]);
+  assert.deepEqual(result.sources, [{date:'2024-08-05',title:'AAPL matching source',url:'https://example.com/story',description:'Historical context',publishedDate:'2024-08-05'}]);
 });
 
 test('missing dated sources skip Gemini instead of generating placeholders', async () => {
@@ -130,4 +130,10 @@ test('event-focused search requires the ticker or known company name in every al
   assert.ok(r.queries[0].includes('launch*'));
   assert.ok(r.queries[0].includes('CEO'));
   assert.ok(r.queries[0].includes('earnings'));
+});
+test('rejects unrelated-company articles even when the provider returns them', async () => {
+ const r = route({key:'test', articles:[{...sourceArticle,title:'Microsoft launches a product',description:'Compared with Apple products'}]});
+ const body = await (await r.post(request(valid))).json();
+ assert.equal(body.sources.length, 0);
+ assert.equal(r.calls(), 0);
 });
