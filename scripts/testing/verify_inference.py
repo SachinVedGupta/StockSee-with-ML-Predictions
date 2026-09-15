@@ -22,7 +22,7 @@ def main():
     before = hashes()
     load_model = prediction.tf.keras.models.load_model
     get_features = prediction.get_stock_features_with_sentiment
-    calls, frames = [], []
+    calls, frames, loads = [], [], []
 
     def features(ticker):
         frame = get_features(ticker)
@@ -30,15 +30,16 @@ def main():
         return frame
 
     def load(*args, **kwargs):
+        loads.append(args[0])
         model = load_model(*args, **kwargs)
-        original_predict = model.predict
-        def predict(inputs, *predict_args, **predict_kwargs):
-            predict_kwargs.setdefault('verbose', 0)
-            output = original_predict(inputs, *predict_args, **predict_kwargs)
-            calls.append({'input': np.array(inputs).copy(), 'output': np.array(output).copy()})
-            return output
-        model.predict = predict
-        return model
+        class AuditedModel:
+            def __call__(self, inputs, **kwargs):
+                output = model(inputs, **kwargs)
+                calls.append({'input': np.array(inputs).copy(), 'output': np.array(output).copy()})
+                # Check direct inference against the previous Keras predict path.
+                np.testing.assert_allclose(output.numpy(), model.predict(inputs, verbose=0), rtol=1e-5, atol=1e-6)
+                return output
+        return AuditedModel()
 
     with patch.object(prediction.tf.keras.models, 'load_model', side_effect=load), \
          patch.object(prediction, 'get_stock_features_with_sentiment', side_effect=features), \
@@ -47,6 +48,9 @@ def main():
         result = prediction.predict_stock_price('AAPL')
         # Test input only; not represented as fetched news.
         score = float(sentiment_from_sentence('The company reported strong revenue growth.'))
+        sentiment_from_sentence('The company reported strong revenue growth.')
+        prediction.get_stock_model()
+        assert len(loads) == 2, 'Resources must load only once per model'
     stock_calls = [c for c in calls if c['input'].ndim == 3]
     first = stock_calls[0]
     assert first['input'].shape == (1, 200, 2)
@@ -68,6 +72,7 @@ def main():
         'sentiment_model_test_score': score,
         'historical_news_sentiment': frames[0].attrs.get('sentiment'),
         'model_artifacts_unchanged': True,
+        'models_loaded_once': len(loads) == 2,
     }, indent=2))
 
 

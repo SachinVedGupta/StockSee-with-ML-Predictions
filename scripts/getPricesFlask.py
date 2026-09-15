@@ -2,6 +2,13 @@ from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import re
+import resource
+from threading import Lock
+
+# Bound TensorFlow/BLAS thread pools before the ML modules are imported.
+os.environ.setdefault('TF_NUM_INTRAOP_THREADS', '1')
+os.environ.setdefault('TF_NUM_INTEROP_THREADS', '1')
+os.environ.setdefault('OMP_NUM_THREADS', '1')
 from sentiment.getNewsArticle import get_articles, NewsUnavailable
 from stock_prediction.stockPredictionWithSentimentModel import predict_stock_price
 
@@ -11,6 +18,7 @@ from stock_prediction.stockPredictionWithSentimentModel import predict_stock_pri
 
 app = Flask(__name__)
 CORS(app)
+prediction_lock = Lock()
 
 @app.route('/predicted_prices', methods=['GET'])
 def predicted_prices():
@@ -20,9 +28,11 @@ def predicted_prices():
 
     try:
         print(f"\n\nFetching data and predictions for {ticker}...\n")
-        result = predict_stock_price(ticker)
+        # A single inference/plot at a time bounds peak memory and protects pyplot.
+        with prediction_lock:
+            result = predict_stock_price(ticker)
         
-        print(f"Predictions complete for {ticker}\n\n")
+        print(f"Predictions complete for {ticker}; peak RSS: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss} (KiB on Linux)\n\n")
 
         # Combine historical (recent 700 days for frontend display, though model uses all 1800 for training) and prediction data (future 50 days) with separator
         all_dates = result['historical_dates'][-700:] + ["Seperate-Dates"] + result['prediction_dates']

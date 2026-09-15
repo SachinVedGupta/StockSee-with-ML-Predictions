@@ -119,22 +119,19 @@ def train_sentiment_analysis_model():
       pickle.dump(tokenizer, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-# run inference to get the sentiment score of a sentence
-def sentiment_from_sentence(sentence): # uses the already saved sentiment analysis model to get the sentiment score for an input sentence
-  sentences = [sentence]
+from functools import lru_cache
 
-  # use the model to predict sentence sentiment values (closer to 0 means negative sentiment AND closer to 1 means positive sentiment)
-  # EXAMPLE INPUT: sentence = "the company's sales had increased by 10%"
+@lru_cache(maxsize=1)
+def get_sentiment_resources():
   with open('./sentiment_storage/tokenizer.pickle', 'rb') as handle:
     tokenizer = pickle.load(handle)
-  
-  sequences = tokenizer.texts_to_sequences(sentences)
+  model = tf.keras.models.load_model('./sentiment_storage/tf_model.keras', compile=False)
+  return tokenizer, model
+
+
+# Reuse the saved resources; direct inference avoids per-call dataset/thread pools.
+def sentiment_from_sentence(sentence):
+  tokenizer, model = get_sentiment_resources()
+  sequences = tokenizer.texts_to_sequences([sentence])
   padded = pad_sequences(sequences, maxlen=100, padding='post', truncating='post')
-
-  loaded_model = tf.keras.models.load_model('./sentiment_storage/tf_model.keras')
-  predictions = loaded_model.predict(padded)
-
-  the_sentiment = predictions[0][0] # sentiment score of first string
-  # the_sentiment = round(the_sentiment) # for discretization of the sentiment score
-
-  return the_sentiment # decimal value between 0 and 1 representing the sentiment analysis score --> closer to 1 is positive sentiment AND closer to 0 is negative sentiment
+  return float(model(padded, training=False).numpy()[0][0])
