@@ -51,7 +51,6 @@ export default function Home() {
   const [stories, setStories] = useState<Array<{title: string; description: string; url: string; source: string; published_at: string; image_url?: string}>>([]);
   const [explanations, setExplanations] = useState<string[]>([]);
   const [explanationSources, setExplanationSources] = useState<Array<{date: string; title: string; url: string; publishedDate?: string}>>([]);
-  const [sentimentStatus, setSentimentStatus] = useState("");
   const [imageUrls, setImageUrls] = useState<string[]>([]);
 
   // HELPER FUNCTIONS
@@ -77,7 +76,6 @@ export default function Home() {
     setStories([]);
     setExplanations([]);
     setExplanationSources([]);
-    setSentimentStatus("");
     if (!/^[A-Z0-9.^=-]{1,20}$/.test(ticker)) {
       setErrorMessage("Enter a valid stock symbol, for example AAPL.");
       return;
@@ -102,14 +100,6 @@ export default function Home() {
         throw new Error("The prediction service returned invalid data. Please try again.");
       }
 
-      const sentiment = chartData[2]?.sentiment;
-      if (sentiment) {
-        setSentimentStatus(sentiment.news_samples > 0
-          ? "Historical news sentiment included."
-          : "News sentiment unavailable; predictions use neutral sentiment.");
-      } else {
-        setSentimentStatus("News sentiment status unavailable.");
-      }
       const dates = chartData[0];
       const prices = chartData[1];
 
@@ -407,8 +397,8 @@ export default function Home() {
             />
 
             <section className="w-full max-w-4xl mb-10" aria-label="News and AI context">
-              <p className="text-sm mb-5">{sentimentStatus}</p>
-              <h3 className="text-xl font-semibold mb-3">Recent news stories</h3>
+              <details className="mb-6" key={`stories-${submittedTicker}`}>
+                <summary className="cursor-pointer text-xl font-semibold mb-3">Recent Stories relating to: {submittedTicker}</summary>
               {storiesWarning && <p role="status" className="mb-4">{storiesWarning}</p>}
               <div className="grid gap-4">
                 {stories.map(story => (
@@ -427,7 +417,9 @@ export default function Home() {
                   </article>
                 ))}
               </div>
-              <h3 className="text-xl font-semibold mt-7 mb-3">AI context for highlighted dates</h3>
+              </details>
+              <details key={`context-${submittedTicker}`}>
+                <summary className="cursor-pointer text-xl font-semibold mb-3">AI News Context for Highlighted Dates</summary>
               <p className="text-sm mb-3">AI context considers news from the preceding two weeks; possible connections are not proven causes.</p>
               {newsWarning && <p role="status" className="mb-3">{newsWarning}</p>}
               {explanations.length > 0 ? <ul className="space-y-3">
@@ -436,6 +428,7 @@ export default function Home() {
                   {explanationSources.filter(source => explanation.includes(source.date)).map(source => <a key={source.url} href={source.url} target="_blank" rel="noopener noreferrer" className="block text-blue-700 underline text-sm mt-2">Source{source.publishedDate ? ` (${source.publishedDate})` : ""}: {source.title}</a>)}
                 </li>)}
               </ul> : (!newsWarning && <p>{loading ? "Loading historical context…" : "No dated news sources were found for these chart highlights."}</p>)}
+              </details>
             </section>
 
             {/* ABOUT SECTION */}
