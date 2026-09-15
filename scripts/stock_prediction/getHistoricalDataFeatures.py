@@ -1,4 +1,5 @@
 import yfinance as yf
+from time import sleep
 import pandas as pd
 from datetime import datetime, timedelta
 
@@ -15,7 +16,21 @@ def get_stock_features(ticker):
         end_date = datetime.today()
         start_date = end_date - timedelta(days=1800)
 
-        historical_data = stock.history(start=start_date, end=end_date)
+        # Yahoo can fail its initial session request after a cold start.
+        # Retry once with a fresh ticker; persistent failures still surface normally.
+        for attempt in range(2):
+            try:
+                historical_data = stock.history(start=start_date, end=end_date)
+                if not historical_data.empty:
+                    break
+            except Exception:
+                if attempt:
+                    raise
+            if not attempt:
+                sleep(0.5)
+                stock = yf.Ticker(ticker)
+        else:
+            raise ValueError("No market data was returned for this ticker")
         if historical_data.empty:
             raise ValueError("No market data was returned for this ticker")
         historical_data.reset_index(inplace=True)

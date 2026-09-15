@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 import gc
 import numpy as np
-from sklearn.preprocessing import StandardScaler
 
 import tensorflow as tf
 tf.config.set_visible_devices([], 'GPU')
@@ -27,14 +26,13 @@ def predict_stock_price(ticker_symbol):
     close_series = stock_data['Close'].values.reshape(-1, 1)
     sentiment_series = stock_data['Sentiment'].values.reshape(-1, 1)
 
-    # normalize the training data to make it easier for model to work with
-    close_scaler = StandardScaler()
-    close_scaler.fit(close_series[:])
-    close_series = close_scaler.transform(close_series).flatten()
-
-    sentiment_scaler = StandardScaler()
-    sentiment_scaler.fit(sentiment_series[:])
-    sentiment_series = sentiment_scaler.transform(sentiment_series).flatten()
+    # Same population-variance standardization, without importing sklearn/scipy
+    # into the memory-limited serving process.
+    close_mean = close_series.mean()
+    close_scale = close_series.std() or 1.0
+    close_series = ((close_series - close_mean) / close_scale).flatten()
+    sentiment_scale = sentiment_series.std() or 1.0
+    sentiment_series = ((sentiment_series - sentiment_series.mean()) / sentiment_scale).flatten()
 
     # combine into a single dataset (series) with two features
     series = np.stack((close_series, sentiment_series), axis=-1)
@@ -70,14 +68,14 @@ def predict_stock_price(ticker_symbol):
     predictions = np.array(predictions).reshape(-1, N)
 
     # inverse transform for plotting (go from normalized to actual dollar values) (use close_scaler as these predictions are close prices)
-    predictions = close_scaler.inverse_transform(predictions)
+    predictions = predictions * close_scale + close_mean
 
     if test:
         # plot the predictions alongside actual values
         plt.figure(figsize=(10, 6))
 
         # plot actual stock prices
-        plt.plot(np.arange(len(close_series)), close_scaler.inverse_transform(close_series.reshape(-1, 1)), label='Actual Prices', color='blue')
+        plt.plot(np.arange(len(close_series)), close_series.reshape(-1, 1) * close_scale + close_mean, label='Actual Prices', color='blue')
 
         # plot non-overlapping predictions
         for i, pred in enumerate(predictions):
