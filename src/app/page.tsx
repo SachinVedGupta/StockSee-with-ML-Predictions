@@ -352,25 +352,30 @@ export default function Home() {
           />
 
           {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            id="submit-btn"
-            className="p-2 bg-blue-500 text-white rounded flex items-center justify-center"
-            disabled={loading}
+          <div
+            className="submit-tooltip"
+            data-tooltip="The first prediction may take longer while the free server wakes up."
           >
-            {loading ? (
-              <>
-                <div className="spinner-border text-light" role="status">
-                  <span className="sr-only">Loading...</span>
-                </div>
-                <p className="loading-note">
-                  {loadingMessage}
-                </p>
-              </>
-            ) : (
-              "Submit"
-            )}
-          </button>
+            <button
+              onClick={handleSubmit}
+              id="submit-btn"
+              className="p-2 bg-blue-500 text-white rounded flex items-center justify-center"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="spinner-border text-light" role="status">
+                    <span className="sr-only">Loading...</span>
+                  </div>
+                  <span className="loading-note" aria-live="polite">
+                    {loadingMessage}
+                  </span>
+                </>
+              ) : (
+                "Submit"
+              )}
+            </button>
+          </div>
 
           {errorMessage && <p role="alert" className="mt-4 text-red-700">{errorMessage}</p>}
 
