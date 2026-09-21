@@ -353,7 +353,7 @@ export default function Home() {
 
           {/* Submit Button */}
           <div
-            className="submit-tooltip"
+            className={`submit-tooltip${loading ? " is-loading" : ""}`}
             data-tooltip="The first prediction may take longer while the server wakes from a cold start."
           >
             <button
