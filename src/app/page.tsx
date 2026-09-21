@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import "chart.js/auto";
 import { Line } from "react-chartjs-2";
 import axios from "axios";
+import { waitForBackend } from "../lib/waitForBackend";
 import Image from "next/image";
 import theimg from "./logo.png";
 import {
@@ -41,6 +42,7 @@ export default function Home() {
   const [stockSymbol, setStockSymbol] = useState("");
   const [chartDisplayData, setChartDisplayData] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [newsWarning, setNewsWarning] = useState("");
   const [showSummary, setShowSummary] = useState(false);
@@ -85,6 +87,9 @@ export default function Home() {
     setSubmittedTicker(ticker);
     setRealImages(getLogoUrl(ticker));
     try {
+      setLoadingMessage("Connecting to the prediction server…");
+      await waitForBackend(backendURL, () => setLoadingMessage("Waking the prediction server. This can take a few minutes…"));
+      setLoadingMessage("Calculating predictions…");
       // Fetch predicted prices from backend
       const chartResponse = await fetch(
         `${backendURL}/predicted_prices?ticker=${encodeURIComponent(ticker)}`,
@@ -361,7 +366,7 @@ export default function Home() {
                   <span className="sr-only">Loading...</span>
                 </div>
                 <p className="loading-note">
-                  The first request may take longer as the backend powers on
+                  {loadingMessage}
                 </p>
               </>
             ) : (

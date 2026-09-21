@@ -10,7 +10,10 @@ os.environ.setdefault('TF_NUM_INTRAOP_THREADS', '1')
 os.environ.setdefault('TF_NUM_INTEROP_THREADS', '1')
 os.environ.setdefault('OMP_NUM_THREADS', '1')
 from sentiment.getNewsArticle import get_articles, NewsUnavailable
-from stock_prediction.stockPredictionWithSentimentModel import predict_stock_price
+def predict_stock_price(ticker):
+    # Let health checks and news respond while the ML runtime is loading.
+    from stock_prediction.stockPredictionWithSentimentModel import predict_stock_price as infer
+    return infer(ticker)
 
 # To run locally
     # within this scripts folder run "python getPricesFlask.py"
@@ -19,6 +22,11 @@ from stock_prediction.stockPredictionWithSentimentModel import predict_stock_pri
 app = Flask(__name__)
 CORS(app)
 prediction_lock = Lock()
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"})
+
 
 @app.route('/predicted_prices', methods=['GET'])
 def predicted_prices():
