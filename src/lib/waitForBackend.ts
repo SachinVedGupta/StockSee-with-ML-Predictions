@@ -21,3 +21,20 @@ export async function waitForBackend(baseUrl: string, onWaiting: () => void) {
   }
   throw new Error("The prediction server is still starting or temporarily unavailable. Please try again in a few minutes.");
 }
+
+export async function fetchPrediction(baseUrl: string, ticker: string, onWaiting: () => void) {
+  const queueDeadline = Date.now() + 180_000;
+  while (true) {
+    const response = await fetch(`${baseUrl}/predicted_prices?ticker=${encodeURIComponent(ticker)}`, {
+      signal: AbortSignal.timeout(120_000),
+    });
+    // Retry only requests explicitly rejected before inference started.
+    // Network errors/timeouts must not submit a duplicate prediction job.
+    if (response.status !== 429) return response;
+    const body = await response.clone().json().catch(() => null);
+    if (body?.code !== "PREDICTION_BUSY") return response;
+    if (Date.now() >= queueDeadline) throw new Error("The prediction server is busy. Please try again shortly.");
+    onWaiting();
+    await new Promise(resolve => setTimeout(resolve, 3000));
+  }
+}

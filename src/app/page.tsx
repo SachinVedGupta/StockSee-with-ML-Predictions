@@ -5,7 +5,7 @@ import React, { useEffect, useState } from "react";
 import "chart.js/auto";
 import { Line } from "react-chartjs-2";
 import axios from "axios";
-import { waitForBackend } from "../lib/waitForBackend";
+import { waitForBackend, fetchPrediction } from "../lib/waitForBackend";
 import Image from "next/image";
 import theimg from "./logo.png";
 import {
@@ -91,10 +91,8 @@ export default function Home() {
       await waitForBackend(backendURL, () => setLoadingMessage("Waking the prediction server. This can take a few minutes…"));
       setLoadingMessage("Calculating predictions…");
       // Fetch predicted prices from backend
-      const chartResponse = await fetch(
-        `${backendURL}/predicted_prices?ticker=${encodeURIComponent(ticker)}`,
-        { signal: AbortSignal.timeout(120000) }
-      );
+      const chartResponse = await fetchPrediction(backendURL, ticker,
+        () => setLoadingMessage("Waiting for the prediction server, then calculating your results…"));
       if (!chartResponse.ok) {
         throw new Error(`Prediction service is unavailable (HTTP ${chartResponse.status}). Please try again shortly.`);
       }

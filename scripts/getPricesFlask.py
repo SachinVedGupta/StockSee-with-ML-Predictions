@@ -34,11 +34,14 @@ def predicted_prices():
     if not re.fullmatch(r'[A-Z0-9.^=-]{1,20}', ticker):
         return jsonify({"error": "Ticker symbol is required"}), 400
 
+    # Do not occupy every HTTP thread waiting for the inference lock: Render
+    # must still be able to health-check the process during a long prediction.
+    if not prediction_lock.acquire(blocking=False):
+        return jsonify({"error": "Another prediction is running", "code": "PREDICTION_BUSY"}), 429, {"Retry-After": "3"}
     try:
         print(f"\n\nFetching data and predictions for {ticker}...\n")
         # A single inference/plot at a time bounds peak memory and protects pyplot.
-        with prediction_lock:
-            result = predict_stock_price(ticker)
+        result = predict_stock_price(ticker)
         
         print(f"Predictions complete for {ticker}; peak RSS: {resource.getrusage(resource.RUSAGE_SELF).ru_maxrss} (KiB on Linux)\n\n")
 
@@ -51,6 +54,8 @@ def predicted_prices():
     except Exception as e:
         print(f"Error processing {ticker}: {e}")
         return jsonify({"error": f"Failed to process data for {ticker}"}), 500
+    finally:
+        prediction_lock.release()
 
 @app.route('/news', methods=['GET'])
 def news():
