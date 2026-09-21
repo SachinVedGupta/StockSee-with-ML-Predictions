@@ -62,7 +62,7 @@ h4 {
 }
 
 .submit-tooltip:hover::after,
-.submit-tooltip:focus-within::after {
+.submit-tooltip:has(#submit-btn:focus-visible)::after {
   opacity: 1;
   transform: translate(-50%, 0);
 }

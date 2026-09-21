@@ -354,7 +354,7 @@ export default function Home() {
           {/* Submit Button */}
           <div
             className="submit-tooltip"
-            data-tooltip="The first prediction may take longer while the free server wakes up."
+            data-tooltip="The first prediction may take longer while the server wakes from a cold start."
           >
             <button
               onClick={handleSubmit}
