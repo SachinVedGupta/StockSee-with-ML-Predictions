@@ -396,7 +396,6 @@ export default function Home() {
         {/* MAIN CHART SECTION */}
         {chartDisplayData && (
           <>
-            <p className="my-4 text-sm">Educational estimates, not financial advice.</p>
             <Line
               aria-label="Historical stock prices and future predictions"
               data={chartDisplayData}
